@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Class Timetable — Plié Pilates</title>
+  <meta name="description" content="The full Plié Pilates weekly timetable. Filter reformer and mat classes by instructor and day, see how many spots are left in each class, and book online.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Fonts load without blocking the page: if the CDN is slow or unreachable,
+       the site still renders instantly on the fallback stack in styles.css. -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Karla:wght@400;500;700&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Karla:wght@400;500;700&display=swap"></noscript>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23F7DEE2'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='17' fill='%239B5A66' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
+</head>
+<body class="page-shell">
+
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="container">
+      <nav class="nav" aria-label="Primary">
+        <a class="brand" href="index.html">
+          <span class="brand-mark" aria-hidden="true"></span>
+          Pli&eacute; Pilates
+        </a>
+
+        <button class="nav-toggle" type="button" aria-expanded="false"
+                aria-controls="nav-menu" aria-label="Open menu">
+          <span class="nav-toggle-bars" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+        </button>
+
+        <div class="nav-menu" id="nav-menu">
+          <ul class="nav-links">
+          <li><a href="classes.html">Classes</a></li>
+          <li><a href="schedule.html">Schedule</a></li>
+          <li><a href="pricing.html">Pricing</a></li>
+          <li><a href="instructors.html">Instructors</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          </ul>
+          <div class="nav-actions">
+            <!-- auth.js swaps this block between logged-out and logged-in states -->
+            <div data-auth-nav></div>
+            <a class="btn btn-sm" href="booking.html">Book a class</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+  </header>
+  <div class="nav-backdrop" data-nav-backdrop aria-hidden="true"></div>
+
+  <main id="main">
+
+    <section class="page-head">
+      <div class="container">
+        <span class="eyebrow">Timetable</span>
+        <h1>This week at Pli&eacute;</h1>
+        <p class="lede">
+          Thirty-five classes a week, every day, from 6:30 AM to 8:00 PM. Filter by
+          class type, instructor or day &mdash; spots update live.
+        </p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+
+        <!-- ================= FILTERS ================= -->
+        <form class="filter-bar" role="search" aria-label="Filter the timetable"
+              onsubmit="return false">
+          <div class="field">
+            <label class="label" for="filter-type">Class type</label>
+            <select class="select" id="filter-type"></select>
+          </div>
+          <div class="field">
+            <label class="label" for="filter-instructor">Instructor</label>
+            <select class="select" id="filter-instructor"></select>
+          </div>
+          <div class="field">
+            <label class="label" for="filter-day">Day</label>
+            <select class="select" id="filter-day"></select>
+          </div>
+          <div class="filter-reset">
+            <button class="btn btn-secondary" type="button" id="filter-reset">Clear filters</button>
+          </div>
+          <p class="filter-count" id="filter-count" role="status" aria-live="polite"></p>
+        </form>
+
+        <!-- ================= LEGEND ================= -->
+        <div class="cluster mt-5" style="font-size:var(--fs-sm);color:var(--text-muted)">
+          <span class="badge badge-reformer">Reformer</span>
+          <span>capped at 8</span>
+          <span aria-hidden="true">&middot;</span>
+          <span class="badge badge-mat">Mat</span>
+          <span>capped at 14</span>
+          <span aria-hidden="true">&middot;</span>
+          <span>Classes that have already started are hidden.</span>
+        </div>
+
+        <!-- ================= RESULTS ================= -->
+        <div class="mt-7" id="schedule-root" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- ================= CTA ================= -->
+    <section class="section tight">
+      <div class="container">
+        <div class="cta-band">
+          <h2>Prefer to be walked through it?</h2>
+          <p>
+            The booking flow picks your class type, date and time step by step &mdash;
+            and shows you how many spots are left before you commit.
+          </p>
+          <div class="cluster mt-6" style="justify-content:center">
+            <a class="btn btn-lg" href="booking.html">Start a booking</a>
+            <a class="btn btn-secondary btn-lg" href="pricing.html">See pricing</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <a class="brand" href="index.html">
+            <span class="brand-mark" aria-hidden="true"></span>
+            Pli&eacute; Pilates
+          </a>
+          <p class="mt-4">Boutique reformer and mat Pilates in Salmiya. Eight beds,
+             four instructors, classes every day of the week.</p>
+          <ul class="cluster mt-5" data-footer-social></ul>
+        </div>
+
+        <div>
+          <h5>Explore</h5>
+          <ul class="footer-links">
+            <li><a href="classes.html">Classes</a></li>
+            <li><a href="schedule.html">Schedule</a></li>
+            <li><a href="pricing.html">Pricing</a></li>
+            <li><a href="instructors.html">Instructors</a></li>
+            <li><a href="about.html">About us</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h5>Your account</h5>
+          <ul class="footer-links">
+            <li><a href="booking.html">Book a class</a></li>
+            <li><a href="account.html">My bookings</a></li>
+            <li><a href="login.html">Log in</a></li>
+            <li><a href="login.html#signup">Create an account</a></li>
+            <li><a href="contact.html#faq">FAQ</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h5>Visit us</h5>
+          <!-- EDIT: these details all come from studio{} in js/data.js -->
+          <address class="footer-links" style="font-style: normal;" data-footer-contact></address>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; <span data-year>2026</span> Pli&eacute; Pilates. All rights reserved.</p>
+        <p>Demo site &mdash; accounts and bookings are stored in your browser only.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/booking.js"></script>
+
+</body>
+</html>

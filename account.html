@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Account — Plié Pilates</title>
+  <meta name="description" content="Your Plié Pilates dashboard: upcoming classes, booking history, remaining class credits and your profile details.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Fonts load without blocking the page: if the CDN is slow or unreachable,
+       the site still renders instantly on the fallback stack in styles.css. -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Karla:wght@400;500;700&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Karla:wght@400;500;700&display=swap"></noscript>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23F7DEE2'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='17' fill='%239B5A66' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
+</head>
+<body class="page-shell">
+
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="container">
+      <nav class="nav" aria-label="Primary">
+        <a class="brand" href="index.html">
+          <span class="brand-mark" aria-hidden="true"></span>
+          Pli&eacute; Pilates
+        </a>
+
+        <button class="nav-toggle" type="button" aria-expanded="false"
+                aria-controls="nav-menu" aria-label="Open menu">
+          <span class="nav-toggle-bars" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+        </button>
+
+        <div class="nav-menu" id="nav-menu">
+          <ul class="nav-links">
+          <li><a href="classes.html">Classes</a></li>
+          <li><a href="schedule.html">Schedule</a></li>
+          <li><a href="pricing.html">Pricing</a></li>
+          <li><a href="instructors.html">Instructors</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          </ul>
+          <div class="nav-actions">
+            <!-- auth.js swaps this block between logged-out and logged-in states -->
+            <div data-auth-nav></div>
+            <a class="btn btn-sm" href="booking.html">Book a class</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+  </header>
+  <div class="nav-backdrop" data-nav-backdrop aria-hidden="true"></div>
+
+  <main id="main">
+
+    <!-- account-root stays hidden until auth.js confirms a session.
+         If there isn't one, requireAuth() redirects to login.html. -->
+    <div id="account-root" class="hidden">
+
+      <section class="page-head">
+        <div class="container">
+          <span class="eyebrow">Your account</span>
+          <h1>Hello, <span data-user-first-name>there</span></h1>
+          <p class="lede">
+            Your upcoming classes, your history and your credits &mdash; all in one place.
+          </p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="dash-grid">
+
+            <!-- ================= SIDEBAR ================= -->
+            <aside class="dash-aside">
+              <div class="credit-card">
+                <div class="k">Class credits</div>
+                <div class="v" data-credit-count>0</div>
+                <div class="sub">One credit books any reformer or mat class.</div>
+                <a class="btn btn-sm mt-5" href="pricing.html"
+                   style="--btn-bg:#fff;--btn-fg:var(--rose-darker);--btn-bd:#fff">Top up</a>
+              </div>
+
+              <div class="stat-row">
+                <div class="stat">
+                  <div class="v" data-stat-upcoming>0</div>
+                  <div class="k">Upcoming</div>
+                </div>
+                <div class="stat">
+                  <div class="v" data-stat-attended>0</div>
+                  <div class="k">Attended</div>
+                </div>
+              </div>
+
+              <div class="card">
+                <h4>Quick actions</h4>
+                <div class="stack mt-4">
+                  <a class="btn btn-block btn-sm" href="booking.html">Book a class</a>
+                  <a class="btn btn-block btn-sm btn-secondary" href="schedule.html">View timetable</a>
+                </div>
+              </div>
+            </aside>
+
+            <!-- ================= MAIN PANEL ================= -->
+            <div>
+              <div class="panel-tabs" role="tablist" aria-label="Your bookings">
+                <button class="panel-tab" type="button" role="tab" id="tab-upcoming"
+                        aria-selected="true" aria-controls="panel-upcoming">
+                  Upcoming<span data-count-upcoming></span>
+                </button>
+                <button class="panel-tab" type="button" role="tab" id="tab-past"
+                        aria-selected="false" aria-controls="panel-past">
+                  Past<span data-count-past></span>
+                </button>
+                <button class="panel-tab" type="button" role="tab" id="tab-cancelled"
+                        aria-selected="false" aria-controls="panel-cancelled">
+                  Cancelled<span data-count-cancelled></span>
+                </button>
+              </div>
+
+              <div id="panel-upcoming" role="tabpanel" aria-labelledby="tab-upcoming">
+                <div id="bookings-upcoming" aria-live="polite"></div>
+                <p class="hint mt-5">
+                  Cancel free up to 12 hours before a class and your credit returns
+                  immediately. Inside 12 hours the credit is spent.
+                </p>
+              </div>
+
+              <div id="panel-past" class="hidden" role="tabpanel" aria-labelledby="tab-past">
+                <div id="bookings-past"></div>
+              </div>
+
+              <div id="panel-cancelled" class="hidden" role="tabpanel" aria-labelledby="tab-cancelled">
+                <div id="bookings-cancelled"></div>
+              </div>
+
+              <!-- ================= PROFILE ================= -->
+              <div class="card mt-7">
+                <h3>Your details</h3>
+                <p class="muted mb-6">Keep these up to date so we can reach you about a class.</p>
+
+                <form id="profile-form" novalidate>
+                  <div class="form-row">
+                    <div class="field">
+                      <label class="label" for="profile-name">Full name</label>
+                      <input class="input" type="text" id="profile-name" name="name"
+                             autocomplete="name" required>
+                      <p class="error-msg" id="profile-name-error" role="alert"></p>
+                    </div>
+                    <div class="field">
+                      <label class="label" for="profile-email">Email address</label>
+                      <input class="input" type="email" id="profile-email" name="email"
+                             autocomplete="email" required>
+                      <p class="error-msg" id="profile-email-error" role="alert"></p>
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <label class="label" for="profile-phone">Mobile number <span class="faint">(optional)</span></label>
+                    <input class="input" type="tel" id="profile-phone" name="phone"
+                           autocomplete="tel" placeholder="+965 5xxx xxxx">
+                    <p class="hint">We only use this if a class is cancelled at short notice.</p>
+                    <p class="error-msg" id="profile-phone-error" role="alert"></p>
+                  </div>
+
+                  <div class="cluster mt-6">
+                    <button class="btn" type="submit">Save changes</button>
+                    <button class="btn btn-ghost" type="button" id="profile-reset">Reset</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- ================= SESSION ================= -->
+              <div class="card mt-5">
+                <div class="cluster" style="justify-content:space-between">
+                  <div>
+                    <h4 class="mb-0">Signed in as <span data-user-email></span></h4>
+                    <p class="muted" style="font-size:var(--fs-sm);margin-top:.35rem">
+                      Your account and bookings are stored in this browser only.
+                    </p>
+                  </div>
+                  <button class="btn btn-secondary btn-sm" type="button" data-logout>Log out</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <a class="brand" href="index.html">
+            <span class="brand-mark" aria-hidden="true"></span>
+            Pli&eacute; Pilates
+          </a>
+          <p class="mt-4">Boutique reformer and mat Pilates in Salmiya. Eight beds,
+             four instructors, classes every day of the week.</p>
+          <ul class="cluster mt-5" data-footer-social></ul>
+        </div>
+
+        <div>
+          <h5>Explore</h5>
+          <ul class="footer-links">
+            <li><a href="classes.html">Classes</a></li>
+            <li><a href="schedule.html">Schedule</a></li>
+            <li><a href="pricing.html">Pricing</a></li>
+            <li><a href="instructors.html">Instructors</a></li>
+            <li><a href="about.html">About us</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h5>Your account</h5>
+          <ul class="footer-links">
+            <li><a href="booking.html">Book a class</a></li>
+            <li><a href="account.html">My bookings</a></li>
+            <li><a href="login.html">Log in</a></li>
+            <li><a href="login.html#signup">Create an account</a></li>
+            <li><a href="contact.html#faq">FAQ</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h5>Visit us</h5>
+          <!-- EDIT: these details all come from studio{} in js/data.js -->
+          <address class="footer-links" style="font-style: normal;" data-footer-contact></address>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; <span data-year>2026</span> Pli&eacute; Pilates. All rights reserved.</p>
+        <p>Demo site &mdash; accounts and bookings are stored in your browser only.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/booking.js"></script>
+
+</body>
+</html>
