@@ -262,24 +262,31 @@
   <script src="js/main.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/booking.js"></script>
+  <script src="js/models-3d.js"></script>
   <script>
     /* Home page — everything below is rendered from js/data.js */
     document.addEventListener('DOMContentLoaded', function () {
-      var R = window.UI.Render, S = window.STUDIO, esc = window.UI.esc;
+      var R = window.UI.Render, S = window.STUDIO, esc = window.UI.esc, M = window.Models3D;
 
-      /* Hero photo placeholders */
-      document.querySelector('[data-hero-media]').innerHTML =
-        R.media(['#F7DEE2', '#E4C3B4'], 'Studio', 'media-tall') +
-        R.media(['#EFE4D8', '#C4818C'], 'Reformer', 'media-square media-front');
+      /* Hero: the reformer itself, spinnable */
+      document.querySelector('[data-hero-media]').innerHTML = M.scene('reformer',
+        'Interactive three-dimensional model of a Pilates reformer: a timber frame ' +
+        'on four legs with a sliding carriage, headrest and shoulder rests, a footbar, ' +
+        'resistance springs and rope handles. Drag to rotate it.',
+        'The reformer');
 
       /* Intro photo placeholder */
       document.querySelector('[data-intro-media]').innerHTML =
         R.media(['#EFE4D8', '#DCC8BE'], 'The studio', 'media-wide');
 
-      /* The two class types */
+      /* The two class types, each topped with its own spinnable model */
       document.querySelector('[data-class-cards]').innerHTML = S.classTypes.map(function (t) {
+        var model = t.id === 'reformer'
+          ? M.scene('reformer', 'Interactive 3D model of a Pilates reformer. Drag to rotate.', '')
+          : M.scene('mat', 'Interactive 3D model of a Pilates mat with a magic circle, ' +
+                           'soft ball, loop band and foam blocks. Drag to rotate.', '');
         return '<article class="card card-flush card-hover class-card">' +
-          R.media(t.gradient, t.short) +
+          model +
           '<div class="card-body">' +
             '<h3>' + esc(t.name) + '</h3>' +
             '<div class="meta">' +
@@ -313,6 +320,8 @@
       /* Testimonials */
       document.querySelector('[data-testimonials]').innerHTML =
         S.testimonials.map(R.testimonial).join('');
+
+      M.init();   /* attach drag-to-spin to every scene inserted above */
     });
   </script>
 

@@ -254,19 +254,29 @@
   <script src="js/main.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/booking.js"></script>
+  <script src="js/models-3d.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      var R = window.UI.Render, S = window.STUDIO, esc = window.UI.esc;
+      var R = window.UI.Render, S = window.STUDIO, esc = window.UI.esc, M = window.Models3D;
 
       document.querySelector('[data-story-media]').innerHTML =
         R.media(['#F7DEE2', '#C4818C'], 'Our studio', 'media-tall');
       document.querySelector('[data-philosophy-media]').innerHTML =
         R.media(['#EFE4D8', '#C99A86'], 'In class', 'media-tall');
 
+      /* Three spinnable vignettes of the space */
       document.querySelector('[data-space-media]').innerHTML =
-        R.media(['#F7DEE2', '#E4C3B4'], 'Studio floor') +
-        R.media(['#EFE4D8', '#DCC8BE'], 'Mat room') +
-        R.media(['#DCE7E3', '#8FA89E'], 'Reception');
+        M.scene('studioFloor',
+          'Interactive 3D scene of the studio floor: three Pilates reformers arranged ' +
+          'in a shallow arc. Drag to rotate.', 'Studio floor') +
+        M.scene('matRoom',
+          'Interactive 3D scene of the mat room: three mats laid out in front of a shelf ' +
+          'holding magic circles, a soft ball and foam blocks. Drag to rotate.', 'Mat room') +
+        M.scene('reception',
+          'Interactive 3D scene of reception: a timber desk with a stack of folded towels, ' +
+          'a small sign and a potted plant beside it. Drag to rotate.', 'Reception');
+
+      M.init();
 
       document.querySelector('[data-values]').innerHTML = S.values.map(function (v, i) {
         return '<article class="card">' +

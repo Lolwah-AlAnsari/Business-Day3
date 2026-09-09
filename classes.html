@@ -148,7 +148,7 @@
       <div class="container">
         <div class="cta-band">
           <h2>Ready to pick a time?</h2>
-          <p>Thirty-four classes a week across reformer and mat. Find one that fits.</p>
+          <p>Thirty-five classes a week across reformer and mat. Find one that fits.</p>
           <div class="cluster mt-6" style="justify-content:center">
             <a class="btn btn-lg" href="schedule.html">View the timetable</a>
             <a class="btn btn-secondary btn-lg" href="booking.html">Book a class</a>
@@ -300,6 +300,8 @@
       function countPerWeek(typeId) {
         return S.weeklySchedule.filter(function (s) { return s.type === typeId; }).length;
       }
+
+      window.Models3D.init();   /* attach drag-to-spin to the scenes just inserted */
 
       document.querySelector('[data-compare-body]').innerHTML = rows.map(function (r) {
         return '<tr><th scope="row" class="th-row">' + esc(r[0]) + '</th>' +

@@ -1906,6 +1906,12 @@ main { flex: 1; }
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
+  cursor: grab;
+  /* pan-y, not none: a vertical swipe still scrolls the page, a horizontal
+     drag spins the model. Never hijack the page scroll on a phone. */
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
   perspective: 1300px;
   perspective-origin: 50% 46%;
   /* Soft pool of light behind the model so it doesn't float on nothing */
@@ -1917,28 +1923,45 @@ main { flex: 1; }
   isolation: isolate;
 }
 
+/* The stage is the camera. Angles are driven by js/models-3d.js so that a
+   drag, its momentum and the idle drift can all compose into one transform;
+   a CSS animation cannot be combined with pointer input. */
 .p3d-stage {
   position: absolute;
   inset: 0;
   transform-style: preserve-3d;
-  /* the camera angle + a responsive scale */
-  transform: rotateX(-20deg) rotateY(-32deg) scale(var(--p3d-scale, 1));
-  animation: p3d-drift 14s var(--ease) infinite;
+  transform:
+    translate(var(--p3d-cx, 0px), var(--p3d-cy, 0px))
+    rotateX(var(--pitch, -20deg))
+    rotateY(var(--yaw, -32deg))
+    scale(calc(var(--p3d-scale, 1) * var(--p3d-fit, 1)));
 }
 
-/* Gentle breathing rotation. Stays inside ±5° so no unmodelled face turns
-   toward the camera. */
-@keyframes p3d-drift {
-  0%, 100% { transform: rotateX(-20deg) rotateY(-32deg) scale(var(--p3d-scale, 1)); }
-  50%      { transform: rotateX(-17deg) rotateY(-27deg) scale(var(--p3d-scale, 1)); }
-}
+.p3d.is-grabbing { cursor: grabbing; }
 
-/* Nudge toward the viewer on hover */
-.p3d:hover .p3d-stage {
-  animation-play-state: paused;
-  transform: rotateX(-16deg) rotateY(-24deg) scale(calc(var(--p3d-scale, 1) * 1.04));
-  transition: transform var(--dur-slow) var(--ease);
+/* "Drag to spin" hint, retired once the visitor has spun it once */
+.p3d-hint {
+  position: absolute;
+  right: var(--sp-4);
+  top: var(--sp-4);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  background: color-mix(in srgb, var(--white) 78%, transparent);
+  backdrop-filter: blur(6px);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--taupe-muted);
+  opacity: 1;
+  transition: opacity var(--dur-slow) var(--ease);
+  pointer-events: none;
 }
+.p3d-hint svg { width: 14px; height: 14px; }
+.p3d.is-touched .p3d-hint { opacity: 0; }
 
 /* --- the cuboid primitive ------------------------------------------------ */
 .p3d-cube {
@@ -2020,7 +2043,13 @@ main { flex: 1; }
       color-mix(in srgb, var(--c) 30%, #fff) 0%,
       var(--c) 46%,
       color-mix(in srgb, var(--c) 72%, #6F615C) 100%);
-  transform: translate3d(var(--x, 0px), var(--y, 0px), var(--z, 0px));
+  /* Billboard: a flat disc would vanish edge-on once the stage spins, so it
+     carries the inverse of the stage rotation and always faces the viewer.
+     Stage is Rx(pitch)·Ry(yaw), so the inverse is Ry(-yaw)·Rx(-pitch). */
+  transform:
+    translate3d(var(--x, 0px), var(--y, 0px), var(--z, 0px))
+    rotateY(var(--bill-y, 0deg))
+    rotateX(var(--bill-x, 0deg));
   box-shadow: 0 6px 14px rgba(69, 59, 56, 0.18);
 }
 
@@ -2056,18 +2085,27 @@ main { flex: 1; }
 }
 
 /* --- responsive scale ---------------------------------------------------- */
-/* Below 900px the layout drops to one column, so the scene box gets much
-   wider and the model needs to scale UP, not down, to still fill it. */
-@media (max-width: 1180px) { .p3d { --p3d-scale: 0.90; } }
-@media (max-width: 1024px) { .p3d { --p3d-scale: 0.85; } }
-@media (max-width: 900px)  { .p3d { --p3d-scale: 1.40; } }
-@media (max-width: 720px)  { .p3d { --p3d-scale: 1.15; } }
-@media (max-width: 520px)  { .p3d { --p3d-scale: 0.85; } }
-@media (max-width: 400px)  { .p3d { --p3d-scale: 0.68; } }
+/* No breakpoint scales here on purpose: models-3d.js measures each model's
+   rendered bounds and solves for the scale and offset that centre it in its
+   scene, at every size. --p3d-scale stays available as a manual override. */
 
+/* Reduced motion: js/models-3d.js turns off the idle drift and the release
+   momentum. Dragging still works, because that is direct manipulation the
+   visitor asked for rather than motion imposed on them. */
 @media (prefers-reduced-motion: reduce) {
-  .p3d-stage { animation: none; }
-  .p3d:hover .p3d-stage {
-    transform: rotateX(-20deg) rotateY(-32deg) scale(var(--p3d-scale, 1));
-  }
+  .p3d-hint { transition: none; }
+}
+
+/* --- scenes in their host contexts --------------------------------------- */
+/* Class cards: the scene is the card's header image, so square off the top
+   corners and match the wider crop the gradient placeholder used. */
+.class-card .p3d {
+  border-radius: 0;
+  aspect-ratio: 16 / 10;
+}
+
+/* Hero: give the scene the same lift the layered photo blocks had. */
+.hero-media .p3d {
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
 }
