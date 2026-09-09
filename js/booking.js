@@ -325,7 +325,7 @@
 
         html += '<section class="day-group">' +
           '<div class="day-heading">' +
-            '<h3>' + esc(Fmt.dayName(d.getDay())) + '</h3>' +
+            '<h2>' + esc(Fmt.dayName(d.getDay())) + '</h2>' +
             '<span class="date">' + esc(d.getDate() + ' ' + Fmt.monthShort(d.getMonth())) + '</span>' +
             (isToday ? '<span class="today-pill">Today</span>' : '') +
           '</div>' +

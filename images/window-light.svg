@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" role="img"
+     aria-label="Illustration of a corner of the studio: an arched window, light on the floor, a plant and folded towels">
+  <title>A corner of the studio</title>
+  <defs>
+    <linearGradient id="w2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDF9F5"/><stop offset="1" stop-color="#F2E4D5"/>
+    </linearGradient>
+    <linearGradient id="f2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E5D2C0"/><stop offset="1" stop-color="#D5BDA8"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#FFFEFC"/><stop offset="1" stop-color="#F7DEE2"/>
+    </linearGradient>
+    <linearGradient id="b2" x1="0.2" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="#FFF7EE" stop-opacity=".92"/>
+      <stop offset="1" stop-color="#FFF7EE" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="900" height="1200" fill="url(#w2)"/>
+  <rect y="820" width="900" height="380" fill="url(#f2)"/>
+  <rect y="816" width="900" height="6" fill="#C6AC95" opacity=".45"/>
+
+  <!-- tall arched window -->
+  <rect x="430" y="130" width="330" height="690" rx="165" fill="url(#g2)"/>
+  <g fill="none" stroke="#E0CFBD" stroke-width="9">
+    <rect x="430" y="130" width="330" height="690" rx="165"/>
+    <path d="M595 145v665M440 470h310"/>
+  </g>
+
+  <!-- light pooling on the floor -->
+  <path d="M430 820h330l190 380H190z" fill="url(#b2)" opacity=".85"/>
+
+  <!-- floorboards -->
+  <g stroke="#C6AC95" stroke-width="3" opacity=".35">
+    <path d="M0 920H900M0 1030H900M0 1140H900"/>
+  </g>
+
+  <!-- plant -->
+  <g transform="translate(90 700)">
+    <path d="M92 130C60 96 44 44 58 0" stroke="#8FA89E" stroke-width="14" fill="none" stroke-linecap="round"/>
+    <ellipse cx="34" cy="30" rx="54" ry="20" fill="#8FA89E" transform="rotate(-34 34 30)"/>
+    <ellipse cx="132" cy="52" rx="50" ry="19" fill="#9DB4AA" transform="rotate(26 132 52)"/>
+    <ellipse cx="78" cy="-18" rx="44" ry="17" fill="#A8BDB3" transform="rotate(-78 78 -18)"/>
+    <ellipse cx="150" cy="0" rx="40" ry="15" fill="#8FA89E" transform="rotate(48 150 0)"/>
+    <path d="M28 130h140l-20 120H48z" fill="#CBB29C"/>
+  </g>
+
+  <!-- folded towels -->
+  <g transform="translate(586 916)">
+    <rect x="0" y="80" width="210" height="40" rx="12" fill="#E3C3C9"/>
+    <rect x="10" y="42" width="190" height="40" rx="12" fill="#F0CBD2"/>
+    <rect x="22" y="4" width="168" height="40" rx="12" fill="#F7DEE2"/>
+  </g>
+
+  <!-- a rolled mat leaning on the wall -->
+  <g transform="translate(300 640)">
+    <rect x="0" y="0" width="58" height="185" rx="29" fill="#EFE4D8"/>
+    <ellipse cx="29" cy="12" rx="29" ry="13" fill="#DCC8BE"/>
+    <ellipse cx="29" cy="12" rx="12" ry="5" fill="#CBB29C"/>
+  </g>
+</svg>

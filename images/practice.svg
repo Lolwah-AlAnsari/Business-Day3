@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" role="img"
+     aria-label="Illustration of a person sitting tall on a mat with legs extended and arms reaching forward, a magic circle and a soft ball beside them">
+  <title>In class</title>
+  <defs>
+    <linearGradient id="w3" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#FDF9F5"/><stop offset="1" stop-color="#F7DEE2"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.46" cy="0.4" r="0.58">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".8"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="900" height="1200" fill="url(#w3)"/>
+  <circle cx="430" cy="490" r="450" fill="url(#halo)"/>
+
+  <!-- mat -->
+  <ellipse cx="450" cy="892" rx="330" ry="58" fill="#DBB6BE" opacity=".45"/>
+  <rect x="150" y="846" width="600" height="52" rx="22" fill="#EFE4D8"/>
+  <rect x="174" y="857" width="552" height="30" rx="15" fill="#E1D0BF" opacity=".75"/>
+
+  <!-- Seated tall, legs extended, arms reaching forward.
+       Solid fills, not gradients: a perfectly horizontal path has a zero-height
+       bounding box, which makes an objectBoundingBox gradient degenerate and the
+       stroke does not paint at all. -->
+  <g stroke-linecap="round" fill="none">
+    <!-- far arm, behind the body -->
+    <path d="M392 668 L598 744" stroke="#A96874" stroke-width="28" opacity=".5"/>
+
+    <!-- extended legs along the mat -->
+    <path d="M404 836 L676 830" stroke="#BE7B87" stroke-width="52"/>
+    <!-- flexed foot -->
+    <path d="M676 830 L694 782" stroke="#A96874" stroke-width="30"/>
+
+    <!-- upright spine, hip to shoulder -->
+    <path d="M402 828 L386 664" stroke="#9B5A66" stroke-width="62"/>
+
+    <!-- near arm reaching toward the feet -->
+    <path d="M390 672 L610 752" stroke="#C4818C" stroke-width="30"/>
+    <circle cx="618" cy="755" r="18" fill="#C4818C" stroke="none"/>
+  </g>
+
+  <!-- head and bun -->
+  <circle cx="381" cy="600" r="52" fill="#9B5A66"/>
+  <circle cx="340" cy="566" r="24" fill="#7F4753"/>
+
+  <!-- magic circle resting beside the mat -->
+  <g transform="translate(198 716)">
+    <circle cx="0" cy="0" r="72" fill="none" stroke="#C4818C" stroke-width="16"/>
+    <rect x="-86" y="-15" width="14" height="32" rx="7" fill="#9A8B85"/>
+    <rect x="72" y="-15" width="14" height="32" rx="7" fill="#9A8B85"/>
+  </g>
+
+  <!-- soft ball -->
+  <circle cx="762" cy="796" r="42" fill="#C4818C"/>
+  <circle cx="748" cy="781" r="15" fill="#DDA6AF" opacity=".6"/>
+</svg>

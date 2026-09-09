@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img"
+     aria-label="Illustration of the studio floor: tall windows, warm light and three reformers">
+  <title>The studio floor</title>
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDF9F5"/><stop offset="1" stop-color="#F3E7DA"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E7D6C6"/><stop offset="1" stop-color="#D9C3B0"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFDFB"/><stop offset="1" stop-color="#F7DEE2"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#FFF6EC" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#FFF6EC" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="bed" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F7DEE2"/><stop offset="1" stop-color="#E3C3C9"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#wall)"/>
+  <rect y="560" width="1600" height="340" fill="url(#floor)"/>
+  <rect y="556" width="1600" height="6" fill="#CBB29C" opacity=".5"/>
+
+  <!-- sprung timber floor -->
+  <g stroke="#C9AF99" stroke-width="2" opacity=".45">
+    <path d="M0 640H1600M0 720H1600M0 810H1600"/>
+  </g>
+
+  <!-- three tall windows -->
+  <g>
+    <rect x="150" y="120" width="230" height="430" rx="115" fill="url(#glass)"/>
+    <rect x="640" y="120" width="230" height="430" rx="115" fill="url(#glass)"/>
+    <rect x="1130" y="120" width="230" height="430" rx="115" fill="url(#glass)"/>
+    <g fill="none" stroke="#E3D3C3" stroke-width="7">
+      <rect x="150" y="120" width="230" height="430" rx="115"/>
+      <rect x="640" y="120" width="230" height="430" rx="115"/>
+      <rect x="1130" y="120" width="230" height="430" rx="115"/>
+      <path d="M265 130v410M755 130v410M1245 130v410"/>
+    </g>
+  </g>
+
+  <!-- light falling across the floor -->
+  <g opacity=".8">
+    <path d="M150 550h230l150 340H70z" fill="url(#beam)"/>
+    <path d="M640 550h230l150 340H490z" fill="url(#beam)"/>
+    <path d="M1130 550h230l150 340H980z" fill="url(#beam)"/>
+  </g>
+
+  <!-- reformers, receding slightly to the right -->
+  <g>
+    <g transform="translate(190 600)">
+      <rect x="0" y="52" width="360" height="20" rx="10" fill="#D6BCA6"/>
+      <rect x="26" y="70" width="20" height="72" rx="8" fill="#C7A88F"/>
+      <rect x="314" y="70" width="20" height="72" rx="8" fill="#C7A88F"/>
+      <rect x="52" y="16" width="180" height="40" rx="12" fill="url(#bed)"/>
+      <rect x="60" y="4" width="46" height="20" rx="10" fill="#E3C3C9"/>
+      <rect x="262" y="6" width="14" height="52" rx="7" fill="#B9A9A2"/>
+      <rect x="330" y="6" width="14" height="52" rx="7" fill="#B9A9A2"/>
+      <rect x="262" y="0" width="82" height="12" rx="6" fill="#A2938D"/>
+    </g>
+    <g transform="translate(640 655) scale(.92)">
+      <rect x="0" y="52" width="360" height="20" rx="10" fill="#D6BCA6"/>
+      <rect x="26" y="70" width="20" height="72" rx="8" fill="#C7A88F"/>
+      <rect x="314" y="70" width="20" height="72" rx="8" fill="#C7A88F"/>
+      <rect x="52" y="16" width="180" height="40" rx="12" fill="url(#bed)"/>
+      <rect x="60" y="4" width="46" height="20" rx="10" fill="#E3C3C9"/>
+      <rect x="262" y="6" width="14" height="52" rx="7" fill="#B9A9A2"/>
+      <rect x="330" y="6" width="14" height="52" rx="7" fill="#B9A9A2"/>
+      <rect x="262" y="0" width="82" height="12" rx="6" fill="#A2938D"/>
+    </g>
+    <g transform="translate(1110 712) scale(.84)">
+      <rect x="0" y="52" width="360" height="20" rx="10" fill="#D6BCA6"/>
+      <rect x="26" y="70" width="20" height="72" rx="8" fill="#C7A88F"/>
+      <rect x="314" y="70" width="20" height="72" rx="8" fill="#C7A88F"/>
+      <rect x="52" y="16" width="180" height="40" rx="12" fill="url(#bed)"/>
+      <rect x="60" y="4" width="46" height="20" rx="10" fill="#E3C3C9"/>
+      <rect x="262" y="6" width="14" height="52" rx="7" fill="#B9A9A2"/>
+      <rect x="330" y="6" width="14" height="52" rx="7" fill="#B9A9A2"/>
+      <rect x="262" y="0" width="82" height="12" rx="6" fill="#A2938D"/>
+    </g>
+  </g>
+
+  <!-- plant in the corner -->
+  <g transform="translate(1392 586)">
+    <path d="M60 0c-38 18-58 62-52 118" stroke="#8FA89E" stroke-width="13" fill="none" stroke-linecap="round"/>
+    <ellipse cx="18" cy="26" rx="44" ry="17" fill="#8FA89E" transform="rotate(-28 18 26)"/>
+    <ellipse cx="96" cy="40" rx="40" ry="15" fill="#9DB4AA" transform="rotate(22 96 40)"/>
+    <ellipse cx="52" cy="-14" rx="36" ry="14" fill="#A8BDB3" transform="rotate(-72 52 -14)"/>
+    <path d="M4 118h108l-14 96H18z" fill="#D9C3B0"/>
+  </g>
+</svg>

@@ -43,7 +43,7 @@
   --rose-darker:  #7F4753;  /* dusty rose — pressed / active         */
   --taupe:        #453B38;  /* deep taupe — body text                */
   --taupe-muted:  #6F615C;  /* deep taupe — secondary text           */
-  --taupe-faint:  #A2938D;  /* deep taupe — hints, disabled text     */
+  --taupe-faint:  #7E706A;  /* deep taupe — hints, placeholders (4.6:1 on cream) */
   --white:        #FFFFFF;
 
   /* Semantic */
@@ -204,6 +204,17 @@ h3 { font-size: var(--fs-xl); }
 h4 { font-size: var(--fs-lg); }
 h5 { font-size: var(--fs-md); font-family: var(--font-sans); font-weight: 700; }
 
+/* Size a heading without lying about its level. Heading order has to stay
+   sequential for screen-reader navigation, but a section heading does not
+   always want to look like one. */
+.t-h3 { font-size: var(--fs-xl); font-weight: 500; }
+.t-h4 { font-size: var(--fs-lg); font-weight: 500; }
+.t-h5 {
+  font-size: var(--fs-md);
+  font-family: var(--font-sans);
+  font-weight: 700;
+}
+
 p { margin: 0 0 var(--sp-4); }
 p:last-child { margin-bottom: 0; }
 
@@ -256,6 +267,7 @@ strong, b { font-weight: 700; color: var(--taupe); }
 .section-blush { background: var(--blush); }
 
 .section-head { max-width: 62ch; margin-bottom: var(--sp-7); }
+.card > p, .card .muted { max-width: 74ch; }
 .section-head.center { margin-inline: auto; text-align: center; }
 
 .grid { display: grid; gap: var(--sp-5); }
@@ -295,6 +307,9 @@ strong, b { font-weight: 700; color: var(--taupe); }
   justify-content: center;
   gap: var(--sp-2);
   padding: 0.85em 1.9em;
+  /* 44px is the comfortable minimum for a finger. Small buttons keep their
+     compact look through padding but never drop below it. */
+  min-height: 44px;
   background: var(--btn-bg);
   color: var(--btn-fg);
   border: 1px solid var(--btn-bd);
@@ -352,7 +367,7 @@ strong, b { font-weight: 700; color: var(--taupe); }
 .btn-danger { --btn-bg: transparent; --btn-fg: var(--danger); --btn-bd: color-mix(in srgb, var(--danger) 40%, transparent); }
 .btn-danger:hover { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
 
-.btn-sm { padding: 0.6em 1.3em; font-size: var(--fs-xs); }
+.btn-sm { padding: 0.55em 1.3em; font-size: var(--fs-xs); }
 .btn-lg { padding: 1em 2.4em; font-size: var(--fs-base); }
 .btn-block { display: flex; width: 100%; }
 
@@ -412,6 +427,7 @@ strong, b { font-weight: 700; color: var(--taupe); }
   text-decoration: none;
   letter-spacing: -0.01em;
   white-space: nowrap;
+  min-height: 44px;
 }
 .brand:hover { color: var(--rose-deep); }
 .brand .brand-mark {
@@ -429,6 +445,9 @@ strong, b { font-weight: 700; color: var(--taupe); }
 }
 .nav-links a {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: 0.4rem 0;
   font-size: var(--fs-sm);
   font-weight: 500;
@@ -440,7 +459,7 @@ strong, b { font-weight: 700; color: var(--taupe); }
 .nav-links a::after {
   content: '';
   position: absolute;
-  left: 0; right: 0; bottom: -2px;
+  left: 0; right: 0; bottom: 8px;
   height: 1.5px;
   background: var(--rose);
   transform: scaleX(0);
@@ -520,7 +539,7 @@ strong, b { font-weight: 700; color: var(--taupe); }
   padding-block: var(--sp-8) var(--sp-5);
   margin-top: auto;
 }
-.site-footer h5 {
+.site-footer h2 {
   font-family: var(--font-sans);
   font-size: var(--fs-xs);
   font-weight: 700;
@@ -540,7 +559,17 @@ strong, b { font-weight: 700; color: var(--taupe); }
   grid-template-columns: 1.6fr 1fr 1fr 1.2fr;
   gap: var(--sp-6);
 }
-.footer-links li + li { margin-top: var(--sp-2); }
+.footer-links li + li { margin-top: var(--sp-1); }
+/* Footer links are the densest tap targets on the page — give them room.
+   Standalone links get a real hit area; links inside a sentence are exempt
+   under WCAG 2.2 Target Size and are left alone so prose doesn't break up. */
+.footer-links a,
+.site-footer address a,
+[data-footer-social] a {
+  display: inline-block;
+  padding: 0.55rem 0;
+}
+[data-footer-social] a { padding: 0.55rem 0.15rem; }
 .footer-bottom {
   display: flex;
   flex-wrap: wrap;
@@ -598,6 +627,8 @@ strong, b { font-weight: 700; color: var(--taupe); }
   background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.55), transparent 62%);
   pointer-events: none;
 }
+/* A real image dropped into a .media frame crops to fill it. */
+img.media { object-fit: cover; background: none; }
 .media-tall { aspect-ratio: 3 / 4; }
 .media-wide { aspect-ratio: 16 / 9; }
 .media-square { aspect-ratio: 1 / 1; }
@@ -713,7 +744,8 @@ strong, b { font-weight: 700; color: var(--taupe); }
 .error-msg.is-visible { display: flex; align-items: flex-start; gap: 0.4rem; }
 .error-msg.is-visible::before { content: '!'; font-weight: 700; }
 
-.hint { margin-top: var(--sp-2); font-size: var(--fs-sm); color: var(--text-muted); }
+.hint { margin-top: var(--sp-2); font-size: var(--fs-sm); color: var(--text-muted); max-width: 70ch; }
+.hint.text-center { margin-inline: auto; }
 
 /* Checkbox / radio */
 .check {
@@ -725,7 +757,7 @@ strong, b { font-weight: 700; color: var(--taupe); }
   color: var(--text-muted);
   line-height: 1.55;
 }
-.check input { margin-top: 0.22rem; width: 17px; height: 17px; accent-color: var(--rose-deep); flex: none; cursor: pointer; }
+.check input { margin-top: 0.15rem; width: 21px; height: 21px; accent-color: var(--rose-deep); flex: none; cursor: pointer; }
 
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
 
@@ -743,6 +775,7 @@ legend { padding: 0; }
 }
 .tab {
   flex: 1;
+  min-height: 44px;
   padding: 0.7rem 1rem;
   background: transparent;
   border: 0;
@@ -843,7 +876,7 @@ tbody tr:hover { background: color-mix(in srgb, var(--blush) 28%, transparent); 
 .toast-text { color: var(--text-muted); }
 .toast-close {
   flex: none;
-  width: 26px; height: 26px;
+  width: 32px; height: 32px;
   padding: 0;
   background: transparent;
   border: 0;
@@ -1136,6 +1169,7 @@ tbody tr:hover { background: color-mix(in srgb, var(--blush) 28%, transparent); 
 /* --- Feature / tick lists --- */
 .tick-list li {
   position: relative;
+  max-width: 72ch;
   padding-left: 1.9rem;
   margin-bottom: var(--sp-3);
   color: var(--text-muted);
@@ -1206,7 +1240,10 @@ tbody tr:hover { background: color-mix(in srgb, var(--blush) 28%, transparent); 
 }
 .cta-band > * { position: relative; z-index: 1; }
 .cta-band h2 { color: var(--white); }
-.cta-band p { color: rgba(255, 255, 255, 0.86); max-width: 52ch; margin-inline: auto; }
+/* Was rgba(255,255,255,.86) — measured 4.3:1 on the lighter end of the
+   gradient, just under AA. Cream is 4.96:1 and reads identically. */
+.cta-band p { color: var(--cream); max-width: 52ch; margin-inline: auto; }
+.cta-band .eyebrow { color: var(--cream); }
 .cta-band .btn {
   --btn-bg: var(--white);
   --btn-fg: var(--rose-darker);
@@ -1241,7 +1278,7 @@ tbody tr:hover { background: color-mix(in srgb, var(--blush) 28%, transparent); 
   margin-bottom: var(--sp-4);
   border-bottom: 1px solid var(--sand-deep);
 }
-.day-heading h3 { margin: 0; }
+.day-heading h2 { margin: 0; font-size: var(--fs-xl); }
 .day-heading .date { font-size: var(--fs-sm); color: var(--text-muted); }
 .day-heading .today-pill {
   padding: 0.15rem 0.6rem;
@@ -1621,6 +1658,7 @@ tbody tr:hover { background: color-mix(in srgb, var(--blush) 28%, transparent); 
 
 .panel-tabs { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-5); border-bottom: 1px solid var(--sand-deep); }
 .panel-tab {
+  min-height: 44px;
   padding: var(--sp-3) var(--sp-4);
   background: transparent;
   border: 0;
@@ -1647,6 +1685,7 @@ tbody tr:hover { background: color-mix(in srgb, var(--blush) 28%, transparent); 
 .info-list .icon-bubble svg { width: 19px; height: 19px; }
 .info-list .k { font-size: var(--fs-xs); letter-spacing: 0.11em; text-transform: uppercase; color: var(--taupe-muted); font-weight: 700; }
 .info-list .v { color: var(--taupe); }
+.info-list .v a { display: inline-block; padding: 0.55rem 0; }
 
 /* Map placeholder — CSS only, no external tiles. EDIT: swap for an <iframe> map. */
 .map-placeholder {
@@ -1725,6 +1764,8 @@ tbody tr:hover { background: color-mix(in srgb, var(--blush) 28%, transparent); 
   position: absolute;
   right: 0.5rem; top: 50%;
   transform: translateY(-50%);
+  min-height: 40px;
+  min-width: 56px;
   padding: 0.4rem 0.7rem;
   background: transparent;
   border: 0;
@@ -1752,6 +1793,9 @@ tbody tr:hover { background: color-mix(in srgb, var(--blush) 28%, transparent); 
   border: 0;
 }
 .text-center { text-align: center; }
+/* Centred paragraphs otherwise run the full container width — 169ch on the
+   pricing page. Comfortable reading is 60–75. */
+.text-center > p, p.text-center { max-width: 68ch; margin-inline: auto; }
 .mt-0 { margin-top: 0; }
 .mt-4 { margin-top: var(--sp-4); }
 .mt-5 { margin-top: var(--sp-5); }
