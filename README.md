@@ -1,225 +1,200 @@
 # Plié Pilates — Studio Website
 
-A complete front-end website for a boutique Pilates studio: marketing pages, a live
-class timetable, accounts, and a four-step booking flow.
+A boutique Pilates studio site with a real backend: live class timetable,
+member accounts, credit-based booking, and 3D equipment illustrations.
 
-**Vanilla HTML, CSS and JavaScript. No frameworks, no build step, no `npm install`.**
+**Front end:** vanilla HTML, CSS and JavaScript. No framework, no build step.
+**Back end:** Supabase (Postgres + Auth).
 
 ---
 
 ## Running it
 
-Double-click **`index.html`**. That's it.
+The site needs an internet connection — it loads the class timetable from the
+database and the Supabase SDK from a CDN.
 
-There is nothing to compile and no server required — every page is plain HTML and
-every script is a plain `<script>` tag.
+- **Live:** <https://lolwah-alansari.github.io/Business-Day3/>
+- **Locally:** run a small web server in this folder and open it in a browser:
 
-> If you want a local server anyway (handy while editing), run
-> `python3 -m http.server 8000` in this folder and open <http://localhost:8000>.
+  ```bash
+  python3 -m http.server 8000
+  # then open http://localhost:8000
+  ```
 
-### Try the demo account
+  Opening `index.html` straight off the disk mostly works too, but a server is
+  closer to how it actually runs.
 
-Accounts are stored in your browser, so a fresh visit starts empty. A demo account is
-seeded automatically:
+### Sign in
 
 | | |
 |---|---|
 | **Email** | `demo@pliepilates.com` |
 | **Password** | `pilates123` |
 
-There's a **"Fill in the demo login"** button at the bottom of `login.html`.
-Or just sign up — new accounts get **2 free class credits**.
-
-**To reset everything** (accounts, bookings, credits), open your browser console and run:
-
-```js
-Object.keys(localStorage).filter(k => k.startsWith('plie:')).forEach(k => localStorage.removeItem(k));
-```
+Or create your own account — new members get **2 free class credits**.
 
 ---
 
-## ⚠️ Read this before going live
-
-**The login and booking system is a front-end demo. It is not secure.**
-
-Accounts, passwords and bookings are written to the visitor's own `localStorage` in
-**plain text**. Anyone can read or forge them from the browser console. Nothing is
-verified, no email is confirmed, and "logging in" only compares two strings.
-
-Before real customers use this, every function in `js/auth.js` must be replaced with
-calls to a real backend that hashes passwords, issues session cookies, and re-validates
-everything server-side. The same applies to bookings in `js/booking.js` — capacity has
-to be enforced on a server, or two people will book the last bed at once.
-
-The warning is repeated at the top of `js/auth.js`.
-
----
-
-## File structure
+## How it fits together
 
 ```
-├── index.html          Home — hero, class types, benefits, instructors, testimonials
-├── about.html          Studio story, philosophy, the space, values
-├── classes.html        Reformer vs Mat in detail + side-by-side comparison
-├── instructors.html    Full profiles for all four instructors
-├── schedule.html       Weekly timetable, filterable by type / instructor / day
-├── booking.html        The four-step booking flow
-├── pricing.html        Drop-in, packs, membership + comparison table
-├── login.html          Log in and sign up (tabbed)
-├── account.html        Dashboard — bookings, credits, profile
-├── contact.html        Contact form, studio details, map, FAQ accordion
-│
-├── css/
-│   └── styles.css      The entire design system
-│
-└── js/
-    ├── data.js         ← ALL studio content lives here
-    ├── main.js         Nav, toasts, accordion, formatting, storage helpers
-    ├── auth.js         Accounts and sessions (demo only)
-    └── booking.js      Slots, capacity, bookings + page controllers
+Browser                          Supabase
+───────                          ────────
+config.js   connection details
+data.js     page copy with no DB table behind it
+main.js     nav, toasts, accordion, UI.ready()
+auth.js  ──────────────────────▶ Auth  (sign up, sign in, sessions)
+booking.js ────────────────────▶ book_class() / cancel_booking()
+store.js    boots everything ──▶ loads all studio content, then fires
+                                 `plie:ready`, which every page waits on
+models-3d.js  the 3D scenes (no backend)
 ```
 
-Load order on every page is `data.js → main.js → auth.js → booking.js`.
+`store.js` loads last on purpose: it creates the client, pulls the content,
+restores the session, fetches the booking window, and only then lets the pages
+render. Everything after that is synchronous, so drawing a timetable never
+waits on the network.
+
+### Files
+
+```
+index.html  about.html  classes.html  instructors.html  schedule.html
+booking.html  pricing.html  login.html  account.html  contact.html
+
+css/styles.css      the whole design system
+js/config.js        Supabase URL + publishable key      ← EDIT to move projects
+js/data.js          benefits and values copy            ← EDIT freely
+js/store.js         boot + database → page mapping
+js/main.js          shared UI
+js/auth.js          accounts and sessions
+js/booking.js       timetable, booking, account, pricing
+js/models-3d.js     the CSS 3D reformer, mat and studio scenes
+```
 
 ---
 
 ## Where to edit things
 
-### Content — `js/data.js`
+### Studio content → the database
 
-**Almost everything you'll want to change is in this one file.** Nothing in it requires
-touching page markup. Every spot that needs your real details is flagged with an
-`EDIT:` comment — search the project for `EDIT:` to find all of them at once.
+Classes, instructors, the timetable, prices, testimonials, FAQs, the address
+and the opening hours all live in Supabase. Edit them in the **Table editor**
+and the site picks the change up on the next page load — no deploy needed.
 
-| What | Where in `data.js` |
+| What | Table |
 |---|---|
-| Address, phone, email, opening hours, socials | `studio` |
-| Class descriptions, durations, **class capacity** | `classTypes` |
-| Instructor names, bios, certifications, specialties | `instructors` |
-| **The weekly timetable** | `weeklySchedule` |
-| Prices, credits, plan features, "most popular" flag | `pricing` |
+| Class descriptions, duration, **capacity** | `class_types` |
+| Instructor names, bios, certifications | `instructors` |
+| **The weekly timetable** | `schedule_template` |
+| Prices, credits, plan features | `pricing_plans` |
 | Member quotes | `testimonials` |
-| Home-page benefit cards | `benefits` |
-| FAQ questions and answers | `faqs` |
-| About-page values | `values` |
+| FAQ | `faqs` |
+| Address, phone, hours, cancellation window | `studio_settings` |
 
-**Changing the timetable** — each row in `weeklySchedule` is one class:
+**Changing the timetable.** Each row in `schedule_template` is one class:
+`weekday` (0 = Sunday), `start_time`, `class_type_id`, `instructor_id`. Add or
+remove rows, then generate the real classes:
 
-```js
-{ day: 1, time: '18:30', type: 'mat', instructor: 'layla' },
-//   ↑            ↑            ↑              ↑
-//   0=Sun…6=Sat  24-hour      classTypes id  instructors id
+```sql
+select generate_class_instances();
 ```
 
-Add, remove or move rows freely. The schedule page, the booking calendar and the
-"classes per week" counts all update themselves.
+That expands the template into dated classes for the booking window. It is
+idempotent, so run it on a nightly schedule to keep the calendar rolling
+forward.
 
-**Changing class size** — set `capacity` on the class type. The booking engine enforces
-it everywhere (currently Reformer 8, Mat 14).
+**Changing class size.** Set `capacity` on the class type. It is copied onto
+each class when generated, so editing it never rewrites classes already booked.
 
-### Colours and fonts — `css/styles.css`
+### Page copy → `js/data.js`
 
-The palette is defined once as custom properties at the top of the file, in `:root`.
-Change those six or seven values and the whole site retheme — nothing below hard-codes
-a colour.
+Only the home-page benefit cards and the about-page values. Marked `EDIT:`.
+
+### Colours and fonts → `css/styles.css`
+
+The palette is seven custom properties at the top of the file, in `:root`.
+Change those and the whole site rethemes.
 
 ```css
---cream:      #FDF9F5;   /* page background      */
---sand:       #EFE4D8;   /* alternating sections */
---blush:      #F7DEE2;   /* soft pink fills      */
---rose:       #C4818C;   /* dusty rose accents   */
---rose-deep:  #9B5A66;   /* buttons and links    */
---taupe:      #453B38;   /* body text            */
+--cream: #FDF9F5;  --sand: #EFE4D8;  --blush: #F7DEE2;
+--rose:  #C4818C;  --rose-deep: #9B5A66;  --taupe: #453B38;
 ```
 
-Contrast is checked: taupe on cream is 10.3:1, rose-deep on cream 4.9:1, and white on
-rose-deep 5.2:1 — all comfortably past WCAG AA. If you swap these, keep text dark.
-
-Fonts are Cormorant Garamond (headings) and Karla (body), loaded from Google Fonts
-without blocking the page — if the CDN is slow or you're offline, the site renders
-immediately on the fallback stack.
+Contrast is checked: taupe on cream is 10.3:1, rose-deep on cream 4.9:1, white
+on rose-deep 5.2:1 — all past WCAG AA.
 
 ### Photos
 
-There are **no image files** in this project, so nothing can 404. Every photo slot is a
-CSS gradient placeholder marked with an `EDIT:` comment.
-
-To use a real photo, replace the placeholder element with an `<img>`:
-
-```html
-<!-- from this -->
-<div class="media" style="--ph-a:#F7DEE2;--ph-b:#E4C3B4">…</div>
-
-<!-- to this -->
-<img class="media" src="images/studio-floor.jpg" alt="The main studio floor at Plié">
-```
-
-The `.media` class keeps the aspect ratio and rounded corners either way. Instructor
-photos come from `R.avatar(...)` calls — swap those for `<img class="avatar-xl">`.
-
-### The map
-
-`contact.html` has a CSS-drawn map placeholder. There's a commented-out `<iframe>`
-right above it showing the Google Maps embed to paste in.
+There are none, and nothing 404s. Every photo slot is either a CSS gradient or
+a 3D model, each marked with an `EDIT:` comment showing where an `<img>` goes.
 
 ---
 
-## How the booking system works
+## The booking rules, and where they are enforced
 
-**Credits.** One credit books any class, reformer or mat. New sign-ups get 2. The
-pricing page simulates a purchase and adds credits (no payment is taken). Booking spends
-one; cancelling in time returns it.
+**In the database, not the browser.** Two people tapping Book on the last
+reformer bed at the same moment both see "1 left" — only the server can settle
+that. `book_class()` locks the class row so the second caller waits, then
+correctly fails.
 
-**Capacity.** Each class type has a hard cap. Full classes can't be selected in the
-wizard and show as "Class full" on the timetable.
+The `bookings` table has no client INSERT policy at all. Writes go only through
+`book_class()` and `cancel_booking()`, so the capacity and credit checks cannot
+be bypassed from the browser.
 
-> So the timetable doesn't look artificially empty, each class starts with a
-> **simulated** baseline occupancy derived from a stable hash of its date and time —
-> that's why some classes are already full. It never changes between reloads.
-> To start every class completely empty, make `baselineTaken()` in `js/booking.js`
-> return `0`.
+- **Credits.** One per class. New members get 2. Booking spends one; cancelling
+  in time returns it.
+- **Capacity.** Reformer 8, mat 14. Full classes cannot be selected.
+- **Double-booking** is blocked by a unique index, not just a UI check.
+- **Cancelling** always frees the seat. The credit comes back only more than
+  12 hours before the class — change `free_cancel_hours` in `studio_settings`.
+- **Booking window** is 21 days — `booking_horizon_days` in `studio_settings`.
 
-**Double-booking** the same class is blocked.
-
-**Cancelling** always frees the spot. The credit is refunded only if you cancel more
-than 12 hours before the class, matching the policy stated on the site. Change
-`FREE_CANCEL_HOURS` at the top of `js/booking.js` to adjust it.
-
-**Booking while logged out** — you can browse and choose a class, date and time without
-an account. At the confirm step you're asked to log in, and your in-progress booking is
-brought back with you afterwards.
-
-**Dates** run 21 days ahead and never include the past. Change `HORIZON_DAYS` in
-`js/booking.js`.
+Credits are an append-only ledger, not a counter, so every balance can be
+explained and nothing is lost when two writes race.
 
 ---
 
-## What's been checked
+## Before you take real bookings
 
-Verified in Chromium at desktop (1280px) and mobile (390px) widths:
+1. **Payments are not connected.** `purchase_plan()` marks an order paid
+   without taking money. Replace it with a payment provider webhook that grants
+   credits only after payment clears. `orders.provider_ref` has a unique index
+   so a replayed webhook cannot double-credit an account.
+2. **Turn email confirmation on or off deliberately.** In Supabase →
+   Authentication → Providers → Email. With it on, new sign-ups must click a
+   link before they can sign in; the site handles both cases.
+3. **Delete the demo account** — remove `demo@pliepilates.com` from
+   Authentication → Users, and the hint block from `login.html`.
+4. **Schedule the two maintenance functions** (Supabase → Database → Cron):
+   `generate_class_instances()` and `expire_credits()`, nightly.
+5. **Replace the placeholder content** — search the project for `EDIT:` and
+   check every row in `studio_settings`.
 
-- All 10 pages load with no JavaScript errors, no broken links, no missing files
-- Sign-up validation: email format, password length, confirm match, duplicate emails
-- Login rejects wrong credentials with a clear inline message
-- Session persists across pages and reloads; nav swaps to "My Account"
-- `account.html` redirects to login when signed out
-- Full journey: sign up → book → view in account → cancel → spot freed
-- Capacity enforced, double-booking blocked, past dates unbookable
-- Back button through the wizard preserves every selection
-- Login round-trip mid-booking returns you to the right step
-- Timetable filters by type, instructor and day
-- Mobile hamburger opens, closes on Escape, closes after navigating
-- No horizontal scroll at 390px on any page
+## Security
+
+Row Level Security is on for all 14 tables. Members read only their own
+bookings, orders and credits; the catalogue is public; the contact inbox is
+staff-only. The key in `js/config.js` is a publishable key and is meant to be
+public — RLS is what protects the data. **Never put a `service_role` key in
+front-end code.**
+
+## What's been tested
+
+Verified in Chromium against a stub that mirrors the schema, and the booking
+rules verified directly against the real database:
+
+- Content loads from the database and maps onto every page
+- Sign up → welcome credits → book → appears in account → cancel → seat freed
+- Double-booking, full classes, past classes and zero credits all rejected
+- Cancellation refunds follow the 12-hour policy
+- Log out, and the account page redirecting when signed out
+- Logging in mid-booking returns you to the right step
+- Contact form writes to the database
+- Backend unreachable → an honest error banner, not a blank page
+- 3D scenes: drag, momentum, fit and centring at 6 breakpoints
 
 ## Accessibility
 
-Semantic HTML, labelled inputs, skip link, visible keyboard focus rings, `aria-expanded`
-on the nav toggle and accordion, `aria-current` on the active nav link, `aria-live` on
-the timetable and toasts, alt text and `role="img"` labels on every graphic, and
-`prefers-reduced-motion` respected throughout. Form errors are inline and announced —
-there is no `alert()` anywhere in the site.
-
-## Browser support
-
-Any current version of Chrome, Edge, Firefox or Safari. Uses `color-mix()`, `clamp()`,
-CSS grid and `aspect-ratio`.
+Semantic HTML, labelled inputs, skip link, visible focus rings, `aria-expanded`
+on the nav and accordion, `aria-live` on the timetable and toasts, and
+`prefers-reduced-motion` respected. Form errors are inline — no `alert()`.

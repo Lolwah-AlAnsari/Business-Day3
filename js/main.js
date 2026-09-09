@@ -490,10 +490,27 @@
     });
   }
 
-  function warnIfNoStorage() {
-    if (Store.available()) return;
-    const banner = $('[data-storage-warning]');
-    if (banner) banner.classList.remove('hidden');
+  /* =========================================================================
+     ready() — run once the DOM is parsed AND the studio content has loaded
+     from Supabase. Page scripts use this instead of DOMContentLoaded, because
+     rendering a timetable before the classes arrive would just paint blanks.
+     ========================================================================= */
+  function ready(fn) {
+    let domDone = document.readyState !== 'loading';
+    let dataDone = !!(window.PLIE && window.PLIE.ready);
+
+    const run = () => {
+      try { fn(); } catch (e) { console.error('[Plié] Page script failed:', e); }
+    };
+    const check = () => { if (domDone && dataDone) run(); };
+
+    if (!domDone) {
+      document.addEventListener('DOMContentLoaded', () => { domDone = true; check(); });
+    }
+    if (!dataDone) {
+      window.addEventListener('plie:ready', () => { dataDone = true; check(); });
+    }
+    check();
   }
 
   /* =========================================================================
@@ -503,6 +520,7 @@
     $: $, $$: $$, el, esc,
     Store, Fmt, DateUtil, Validate, Render,
     toast,
+    ready,
     initAccordions,
     currentPage
   };
@@ -510,11 +528,19 @@
   /* =========================================================================
      Boot
      ========================================================================= */
+  // Chrome that needs only the DOM
   document.addEventListener('DOMContentLoaded', function () {
     initNav();
     initAccordions();
     initFooterYear();
+  });
+
+  // Anything driven by studio content has to wait for the database
+  ready(function () {
     initFooterContent();
-    warnIfNoStorage();
+    window.Auth.renderNav();
+    window.Auth.bindLogout();
+    window.Auth.initLoginPage();
+    window.Booking.initPages();
   });
 })();

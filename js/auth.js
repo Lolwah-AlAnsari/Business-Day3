@@ -1,277 +1,235 @@
 /* ===========================================================================
    Plié Pilates — auth.js
    ---------------------------------------------------------------------------
-   ⚠️  DEMO ONLY — THIS IS NOT SECURE AND MUST NOT BE USED IN PRODUCTION.
-   ---------------------------------------------------------------------------
-   There is no server here. Accounts, passwords and sessions are written to
-   the visitor's own localStorage in PLAIN TEXT, and any script or browser
-   console on this origin can read or forge them. Nothing is verified, no
-   email is confirmed, and "logging in" only compares two strings.
+   Real authentication, backed by Supabase Auth.
 
-   It exists so the booking flow can be demonstrated end to end. Before this
-   site goes live, every function below must be replaced by real calls to a
-   backend that hashes passwords (bcrypt/argon2), issues httpOnly session
-   cookies, and validates everything again on the server.
+   Passwords are hashed and stored by Supabase; this file never sees, keeps or
+   transmits one beyond the sign-in call. The session lives in an httpOnly-ish
+   token managed by the SDK and refreshes itself.
+
+   The profile and credit balance are cached in memory once at boot so the
+   render code can stay synchronous — the network round trips happen during
+   startup, not while drawing the nav bar.
    =========================================================================== */
 
 (function () {
   'use strict';
 
-  const { Store, Validate, toast, $, $$, esc, Render } = window.UI;
-
-  const KEY_USERS   = 'users';
-  const KEY_SESSION = 'session';
-  const KEY_RETURN  = 'returnTo';
-
-  /* Credits given to a brand-new account so people can try the booking flow.
-     EDIT: set to 0 if you'd rather new sign-ups start empty. */
-  const WELCOME_CREDITS = 2;
+  const { Validate, toast, $, $$, esc, Render } = window.UI;
 
   const MIN_PASSWORD = 8;
 
-  /* =========================================================================
-     Storage layer
-     ========================================================================= */
-  function allUsers() {
-    const users = Store.get(KEY_USERS, []);
-    return Array.isArray(users) ? users : [];
-  }
+  /* Cached so currentUser() / creditBalance() can be called synchronously. */
+  let cachedUser = null;     // { id, name, email, phone, credits, role }
+  let authReady = false;
 
-  function saveUsers(users) {
-    return Store.set(KEY_USERS, users);
-  }
-
-  function normaliseEmail(email) {
-    return String(email || '').trim().toLowerCase();
-  }
-
-  function findByEmail(email) {
-    const target = normaliseEmail(email);
-    return allUsers().find((u) => normaliseEmail(u.email) === target) || null;
-  }
-
-  function findById(id) {
-    return allUsers().find((u) => u.id === id) || null;
-  }
-
-  function makeId() {
-    return 'u_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-  }
-
-  function initialsFor(name) {
-    const parts = String(name).trim().split(/\s+/).filter(Boolean);
-    if (!parts.length) return '?';
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
+  function sb() { return window.PLIE.client; }
 
   /* =========================================================================
-     Demo seed account
-     Lets you (and anyone reviewing the site) log in without signing up first.
-     EDIT: delete this whole block, and the hint on login.html, before launch.
+     Loading the signed-in member
      ========================================================================= */
-  const DEMO = {
-    email: 'demo@pliepilates.com',
-    password: 'pilates123',
-    name: 'Amal Demo'
-  };
+  async function loadUser() {
+    const client = sb();
+    if (!client) { cachedUser = null; return null; }
 
-  function seedDemoAccount() {
-    if (findByEmail(DEMO.email)) return;
-    const users = allUsers();
-    users.push({
-      id: 'u_demo',
-      name: DEMO.name,
-      email: DEMO.email,
-      password: DEMO.password,     // plain text — see the warning at the top
-      credits: 6,
-      phone: '',
-      joined: new Date().toISOString(),
-      isDemo: true
-    });
-    saveUsers(users);
+    const { data: { session } } = await client.auth.getSession();
+    if (!session || !session.user) { cachedUser = null; return null; }
+
+    const uid = session.user.id;
+
+    const [profileRes, balanceRes] = await Promise.all([
+      client.from('profiles').select('id, full_name, email, phone, role').eq('id', uid).maybeSingle(),
+      client.from('credit_balances').select('balance').eq('user_id', uid).maybeSingle()
+    ]);
+
+    if (profileRes.error) {
+      console.warn('[Plié] Could not load profile:', profileRes.error.message);
+    }
+
+    const p = profileRes.data;
+    cachedUser = {
+      id: uid,
+      name: (p && p.full_name) || session.user.user_metadata.full_name || '',
+      email: (p && p.email) || session.user.email || '',
+      phone: (p && p.phone) || '',
+      role: (p && p.role) || 'member',
+      credits: (balanceRes.data && balanceRes.data.balance) || 0
+    };
+    return cachedUser;
+  }
+
+  /** Re-read just the credit balance (after a booking, cancellation or purchase). */
+  async function refreshCredits() {
+    if (!cachedUser) return 0;
+    const { data } = await sb()
+      .from('credit_balances').select('balance').eq('user_id', cachedUser.id).maybeSingle();
+    cachedUser.credits = (data && data.balance) || 0;
+    renderNav();
+    return cachedUser.credits;
   }
 
   /* =========================================================================
-     Session
+     Public state
      ========================================================================= */
-  function currentUser() {
-    const session = Store.get(KEY_SESSION, null);
-    if (!session || !session.userId) return null;
-    return findById(session.userId);
-  }
+  function currentUser() { return cachedUser; }
+  function isLoggedIn() { return cachedUser !== null; }
+  function creditBalance() { return cachedUser ? Number(cachedUser.credits || 0) : 0; }
 
-  function isLoggedIn() {
-    return currentUser() !== null;
-  }
-
-  function startSession(user) {
-    Store.set(KEY_SESSION, { userId: user.id, since: new Date().toISOString() });
-    announce();
-  }
-
-  function endSession() {
-    Store.remove(KEY_SESSION);
-    announce();
-  }
-
-  /** Let any page react to a login / logout / credit change. */
   function announce() {
     renderNav();
-    window.dispatchEvent(new CustomEvent('plie:auth', { detail: { user: currentUser() } }));
+    window.dispatchEvent(new CustomEvent('plie:auth', { detail: { user: cachedUser } }));
   }
 
   /* =========================================================================
-     Account actions
+     Sign up / log in / log out
      ========================================================================= */
 
-  /** @returns {{ok:true,user:object}|{ok:false,field:string,message:string}} */
-  function signUp(name, email, password) {
-    const clean = {
-      name: String(name).trim(),
-      email: normaliseEmail(email)
-    };
+  /** @returns {{ok:true,user:object,needsConfirmation:boolean}|{ok:false,field:string,message:string}} */
+  async function signUp(name, email, password) {
+    const cleanName = String(name).trim();
+    const cleanEmail = String(email).trim().toLowerCase();
 
-    if (!clean.name) return fail('name', 'Please tell us your name.');
-    if (clean.name.length < 2) return fail('name', 'That name looks a little short.');
-    if (!clean.email) return fail('email', 'Please enter your email address.');
-    if (!Validate.isEmail(clean.email)) return fail('email', 'That doesn’t look like a valid email address.');
-    if (findByEmail(clean.email)) return fail('email', 'An account with this email already exists. Try logging in instead.');
+    if (!cleanName || cleanName.length < 2) return fail('name', 'Please tell us your name.');
+    if (!Validate.isEmail(cleanEmail)) return fail('email', 'That doesn’t look like a valid email address.');
     if (!password) return fail('password', 'Please choose a password.');
-    if (password.length < MIN_PASSWORD) return fail('password', 'Passwords need to be at least ' + MIN_PASSWORD + ' characters.');
-
-    const user = {
-      id: makeId(),
-      name: clean.name,
-      email: clean.email,
-      password: password,          // plain text — see the warning at the top
-      credits: WELCOME_CREDITS,
-      phone: '',
-      joined: new Date().toISOString()
-    };
-
-    const users = allUsers();
-    users.push(user);
-    if (!saveUsers(users)) {
-      return fail('email', 'Your browser blocked local storage, so the account could not be saved.');
+    if (password.length < MIN_PASSWORD) {
+      return fail('password', 'Passwords need to be at least ' + MIN_PASSWORD + ' characters.');
     }
 
-    startSession(user);
-    return { ok: true, user: user };
+    const { data, error } = await sb().auth.signUp({
+      email: cleanEmail,
+      password: password,
+      options: { data: { full_name: cleanName } }
+    });
+
+    if (error) return fail(fieldForAuthError(error), friendlyAuthError(error));
+
+    // With "Confirm email" switched on, Supabase returns a user but no session.
+    if (!data.session) {
+      return { ok: true, user: null, needsConfirmation: true, email: cleanEmail };
+    }
+
+    await loadUser();
+    announce();
+    return { ok: true, user: cachedUser, needsConfirmation: false };
   }
 
   /** @returns {{ok:true,user:object}|{ok:false,field:string,message:string}} */
-  function logIn(email, password) {
-    const clean = normaliseEmail(email);
+  async function logIn(email, password) {
+    const cleanEmail = String(email).trim().toLowerCase();
 
-    if (!clean) return fail('email', 'Please enter your email address.');
-    if (!Validate.isEmail(clean)) return fail('email', 'That doesn’t look like a valid email address.');
+    if (!cleanEmail) return fail('email', 'Please enter your email address.');
+    if (!Validate.isEmail(cleanEmail)) return fail('email', 'That doesn’t look like a valid email address.');
     if (!password) return fail('password', 'Please enter your password.');
 
-    const user = findByEmail(clean);
-    // Deliberately vague, and attached to the password field, so we don't
-    // confirm which emails have accounts.
-    if (!user || user.password !== password) {
-      return fail('password', 'Email or password is incorrect. Please try again.');
+    const { error } = await sb().auth.signInWithPassword({ email: cleanEmail, password: password });
+
+    if (error) {
+      // Attached to the password field and deliberately vague, so the form
+      // never confirms which email addresses have accounts.
+      return fail('password', friendlyAuthError(error));
     }
 
-    startSession(user);
-    return { ok: true, user: user };
+    await loadUser();
+    announce();
+    return { ok: true, user: cachedUser };
   }
 
-  function logOut() {
-    endSession();
+  async function logOut() {
+    await sb().auth.signOut();
+    cachedUser = null;
+    announce();
   }
 
-  /** Patch fields on the signed-in user. */
-  function updateUser(changes) {
-    const user = currentUser();
-    if (!user) return { ok: false, message: 'You are not signed in.' };
+  /** Update the signed-in member's own profile row. */
+  async function updateUser(changes) {
+    if (!cachedUser) return { ok: false, message: 'You are not signed in.' };
 
-    if (changes.email !== undefined) {
-      const email = normaliseEmail(changes.email);
-      if (!Validate.isEmail(email)) return fail('email', 'That doesn’t look like a valid email address.');
-      const clash = findByEmail(email);
-      if (clash && clash.id !== user.id) return fail('email', 'Another account already uses that email.');
-      changes.email = email;
-    }
+    const patch = {};
     if (changes.name !== undefined) {
-      changes.name = String(changes.name).trim();
-      if (changes.name.length < 2) return fail('name', 'Please enter your full name.');
+      const n = String(changes.name).trim();
+      if (n.length < 2) return fail('name', 'Please enter your full name.');
+      patch.full_name = n;
     }
-    if (changes.password !== undefined) {
-      if (changes.password.length < MIN_PASSWORD) {
-        return fail('password', 'Passwords need to be at least ' + MIN_PASSWORD + ' characters.');
-      }
+    if (changes.email !== undefined) {
+      const e = String(changes.email).trim().toLowerCase();
+      if (!Validate.isEmail(e)) return fail('email', 'That doesn’t look like a valid email address.');
+      patch.email = e;
+    }
+    if (changes.phone !== undefined) patch.phone = String(changes.phone).trim();
+
+    const { error } = await sb().from('profiles').update(patch).eq('id', cachedUser.id);
+
+    if (error) {
+      // The unique index on lower(email) is what actually prevents duplicates
+      if (error.code === '23505') return fail('email', 'Another account already uses that email.');
+      return fail('email', error.message);
     }
 
-    const users = allUsers();
-    const index = users.findIndex((u) => u.id === user.id);
-    if (index === -1) return { ok: false, message: 'Account not found.' };
+    // Changing the login email needs Auth updating too, which sends a
+    // confirmation to the new address before it takes effect.
+    if (patch.email && patch.email !== cachedUser.email) {
+      const { error: authErr } = await sb().auth.updateUser({ email: patch.email });
+      if (authErr) return fail('email', friendlyAuthError(authErr));
+    }
 
-    users[index] = Object.assign({}, users[index], changes);
-    saveUsers(users);
+    await loadUser();
     announce();
-    return { ok: true, user: users[index] };
+    return { ok: true, user: cachedUser };
   }
 
-  /* --- Credits -------------------------------------------------------------
-     booking.js spends 1 credit per booking and refunds it on cancellation.
-     pricing.html "purchases" call addCredits().
-     ------------------------------------------------------------------------- */
-  function addCredits(amount) {
-    const user = currentUser();
-    if (!user) return { ok: false, message: 'You are not signed in.' };
-    const users = allUsers();
-    const index = users.findIndex((u) => u.id === user.id);
-    users[index].credits = Math.max(0, (users[index].credits || 0) + Number(amount));
-    saveUsers(users);
-    announce();
-    return { ok: true, credits: users[index].credits };
+  function fail(field, message) { return { ok: false, field: field, message: message }; }
+
+  function fieldForAuthError(error) {
+    const m = (error.message || '').toLowerCase();
+    if (m.indexOf('email') !== -1 || m.indexOf('registered') !== -1) return 'email';
+    return 'password';
   }
 
-  function spendCredit() {
-    return addCredits(-1);
-  }
-
-  function creditBalance() {
-    const user = currentUser();
-    return user ? Number(user.credits || 0) : 0;
-  }
-
-  function fail(field, message) {
-    return { ok: false, field: field, message: message };
+  function friendlyAuthError(error) {
+    const m = (error.message || '').toLowerCase();
+    if (m.indexOf('already registered') !== -1 || m.indexOf('already been registered') !== -1) {
+      return 'An account with this email already exists. Try logging in instead.';
+    }
+    if (m.indexOf('invalid login') !== -1 || m.indexOf('invalid credentials') !== -1) {
+      return 'Email or password is incorrect. Please try again.';
+    }
+    if (m.indexOf('email not confirmed') !== -1) {
+      return 'Please confirm your email address first — check your inbox for the link.';
+    }
+    if (m.indexOf('rate limit') !== -1 || m.indexOf('too many') !== -1) {
+      return 'Too many attempts just now. Please wait a moment and try again.';
+    }
+    if (m.indexOf('password') !== -1 && m.indexOf('short') !== -1) {
+      return 'Passwords need to be at least ' + MIN_PASSWORD + ' characters.';
+    }
+    return error.message || 'Something went wrong. Please try again.';
   }
 
   /* =========================================================================
-     Return-to redirects
-     "Log in to finish booking" must bring you back to where you were.
+     Return-to redirects — "log in to finish booking" must come back here
      ========================================================================= */
+  const KEY_RETURN = 'plie:returnTo';
+
   function setReturnTo(url) {
-    Store.set(KEY_RETURN, url || (window.location.pathname.split('/').pop() + window.location.search));
+    try {
+      sessionStorage.setItem(KEY_RETURN,
+        url || (window.location.pathname.split('/').pop() + window.location.search));
+    } catch (e) { /* private browsing */ }
   }
-
   function takeReturnTo() {
-    const url = Store.get(KEY_RETURN, null);
-    Store.remove(KEY_RETURN);
-    return url;
+    try {
+      const v = sessionStorage.getItem(KEY_RETURN);
+      sessionStorage.removeItem(KEY_RETURN);
+      return v;
+    } catch (e) { return null; }
   }
-
   function peekReturnTo() {
-    return Store.get(KEY_RETURN, null);
+    try { return sessionStorage.getItem(KEY_RETURN); } catch (e) { return null; }
   }
 
-  /** Send the visitor to the login page, remembering where they were. */
-  function redirectToLogin(returnUrl) {
-    setReturnTo(returnUrl);
-    window.location.href = 'login.html';
-  }
-
-  /** Guard a page that requires an account. Returns the user, or null after
-      kicking off a redirect. */
   function requireAuth() {
-    const user = currentUser();
-    if (user) return user;
+    if (cachedUser) return cachedUser;
     setReturnTo(window.location.pathname.split('/').pop() + window.location.search);
     window.location.replace('login.html?next=account');
     return null;
@@ -280,87 +238,82 @@
   /* =========================================================================
      Navigation rendering
      ========================================================================= */
+  function initialsFor(name) {
+    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
   function renderNav() {
-    const user = currentUser();
+    const user = cachedUser;
 
     $$('[data-auth-nav]').forEach((slot) => {
       if (user) {
+        const first = (user.name || user.email).split(' ')[0];
         slot.innerHTML =
           '<a class="nav-user" href="account.html">' +
-          Render.avatar(['#F7DEE2', '#C4818C'], initialsFor(user.name)) +
-          '<span>' + esc(user.name.split(' ')[0]) + '</span>' +
-          '</a>' +
+          Render.avatar(['#F7DEE2', '#C4818C'], initialsFor(user.name || user.email)) +
+          '<span>' + esc(first) + '</span></a>' +
           '<button class="btn btn-ghost btn-sm" type="button" data-logout>Log out</button>';
       } else {
         slot.innerHTML = '<a class="btn btn-secondary btn-sm" href="login.html">Log in</a>';
       }
     });
 
-    // Anything tagged data-auth-only / data-guest-only shows conditionally
     $$('[data-auth-only]').forEach((n) => n.classList.toggle('hidden', !user));
     $$('[data-guest-only]').forEach((n) => n.classList.toggle('hidden', !!user));
 
-    // Live credit counters anywhere on the page
     $$('[data-credit-count]').forEach((n) => { n.textContent = user ? String(user.credits || 0) : '0'; });
     $$('[data-user-name]').forEach((n) => { n.textContent = user ? user.name : ''; });
-    $$('[data-user-first-name]').forEach((n) => { n.textContent = user ? user.name.split(' ')[0] : ''; });
+    $$('[data-user-first-name]').forEach((n) => {
+      n.textContent = user ? (user.name || user.email).split(' ')[0] : '';
+    });
     $$('[data-user-email]').forEach((n) => { n.textContent = user ? user.email : ''; });
   }
 
-  /** One delegated handler covers the log-out button in the header and footer. */
   function bindLogout() {
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', async (e) => {
       const btn = e.target.closest('[data-logout]');
       if (!btn) return;
       e.preventDefault();
-      const name = (currentUser() || {}).name || '';
-      logOut();
+      const name = (cachedUser && cachedUser.name) || '';
+      await logOut();
       toast('Signed out', name ? 'See you soon, ' + name.split(' ')[0] + '.' : '', 'info');
-      // Leave any account-only page
-      const page = window.UI.currentPage();
-      if (page === 'account.html') window.location.href = 'index.html';
+      if (window.UI.currentPage() === 'account.html') window.location.href = 'index.html';
     });
   }
 
   /* =========================================================================
-     Login / sign-up page controller
+     Login / sign-up page
      ========================================================================= */
   function initLoginPage() {
     const root = $('#auth-root');
     if (!root) return;
 
-    const tabLogin  = $('#tab-login');
+    const tabLogin = $('#tab-login');
     const tabSignup = $('#tab-signup');
-    const panelLogin  = $('#panel-login');
+    const panelLogin = $('#panel-login');
     const panelSignup = $('#panel-signup');
-    const loginForm  = $('#login-form');
+    const loginForm = $('#login-form');
     const signupForm = $('#signup-form');
 
-    /* --- already signed in? --------------------------------------------- */
-    if (currentUser()) {
-      const next = takeReturnTo() || 'account.html';
-      window.location.replace(next);
+    if (cachedUser) {
+      window.location.replace(takeReturnTo() || 'account.html');
       return;
     }
 
-    /* --- tabs ------------------------------------------------------------ */
     function selectTab(which) {
       const login = which === 'login';
       tabLogin.setAttribute('aria-selected', String(login));
       tabSignup.setAttribute('aria-selected', String(!login));
       panelLogin.classList.toggle('hidden', !login);
       panelSignup.classList.toggle('hidden', login);
-      if (window.location.hash !== (login ? '' : '#signup')) {
-        history.replaceState(null, '', login ? window.location.pathname + window.location.search
-                                             : window.location.pathname + window.location.search + '#signup');
-      }
     }
-
     tabLogin.addEventListener('click', () => selectTab('login'));
     tabSignup.addEventListener('click', () => selectTab('signup'));
     selectTab(window.location.hash === '#signup' ? 'signup' : 'login');
 
-    /* --- context banner --------------------------------------------------- */
     const pending = peekReturnTo();
     const banner = $('#auth-context');
     if (pending && banner) {
@@ -376,7 +329,6 @@
         '</div></div>';
     }
 
-    /* --- show / hide password -------------------------------------------- */
     $$('.pw-toggle').forEach((btn) => {
       btn.addEventListener('click', () => {
         const input = document.getElementById(btn.dataset.for);
@@ -389,45 +341,56 @@
       });
     });
 
-    /* --- where to go after success --------------------------------------- */
-    function finish(user, message) {
+    function busy(form, on, label) {
+      const btn = form.querySelector('button[type=submit]');
+      btn.disabled = on;
+      btn.textContent = on ? label : btn.dataset.label;
+    }
+
+    function goNext(message, user) {
       const next = takeReturnTo() || 'account.html';
-      toast(message, 'Signed in as ' + user.name + '.', 'success');
+      toast(message, 'Signed in as ' + (user.name || user.email) + '.', 'success');
       setTimeout(() => { window.location.href = next; }, 650);
     }
 
-    /* --- log in ----------------------------------------------------------- */
+    /* --- log in --- */
     const loginEmail = $('#login-email');
     const loginPassword = $('#login-password');
+    const loginBtn = loginForm.querySelector('button[type=submit]');
+    loginBtn.dataset.label = loginBtn.textContent;
     Validate.liveClear(loginForm);
 
-    loginForm.addEventListener('submit', (e) => {
+    loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       Validate.clearAll(loginForm);
+      busy(loginForm, true, 'Signing in…');
 
-      const result = logIn(loginEmail.value, loginPassword.value);
+      const result = await logIn(loginEmail.value, loginPassword.value);
+      busy(loginForm, false);
+
       if (!result.ok) {
-        const field = result.field === 'email' ? loginEmail : loginPassword;
-        Validate.fail(field, result.message);
+        Validate.fail(result.field === 'email' ? loginEmail : loginPassword, result.message);
         Validate.focusFirstError(loginForm);
         return;
       }
-      finish(result.user, 'Welcome back');
+      goNext('Welcome back', result.user);
     });
 
-    /* --- sign up ----------------------------------------------------------- */
+    /* --- sign up --- */
     const suName = $('#signup-name');
     const suEmail = $('#signup-email');
     const suPassword = $('#signup-password');
     const suConfirm = $('#signup-confirm');
     const suTerms = $('#signup-terms');
+    const suBtn = signupForm.querySelector('button[type=submit]');
+    suBtn.dataset.label = suBtn.textContent;
     Validate.liveClear(signupForm);
 
-    signupForm.addEventListener('submit', (e) => {
+    signupForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       Validate.clearAll(signupForm);
 
-      // Confirm-password is checked here because auth.signUp only sees one password
+      // Checked here because Supabase only ever sees one password
       let valid = true;
       if (!suPassword.value) {
         valid = Validate.fail(suPassword, 'Please choose a password.');
@@ -439,73 +402,72 @@
       } else if (suConfirm.value !== suPassword.value) {
         valid = Validate.fail(suConfirm, 'The two passwords don’t match.');
       }
+      if (suName.value.trim().length < 2) valid = Validate.fail(suName, 'Please tell us your name.');
+      if (!Validate.isEmail(suEmail.value)) valid = Validate.fail(suEmail, 'Please enter a valid email address.');
       if (suTerms && !suTerms.checked) {
         const msg = document.getElementById('signup-terms-error');
         if (msg) { msg.textContent = 'Please accept the studio policies to continue.'; msg.classList.add('is-visible'); }
         valid = false;
       }
+      if (!valid) { Validate.focusFirstError(signupForm); return; }
 
-      const result = signUp(suName.value, suEmail.value, suPassword.value);
+      busy(signupForm, true, 'Creating your account…');
+      const result = await signUp(suName.value, suEmail.value, suPassword.value);
+      busy(signupForm, false);
 
       if (!result.ok) {
         const map = { name: suName, email: suEmail, password: suPassword };
         Validate.fail(map[result.field] || suEmail, result.message);
-        valid = false;
-      }
-
-      if (!valid) {
-        // signUp may have already created the account before a later check failed;
-        // it never does — signUp validates first — but be explicit for readers:
-        // if it succeeded and the local checks failed, roll the session back.
-        if (result.ok) { logOut(); removeUser(result.user.id); }
         Validate.focusFirstError(signupForm);
         return;
       }
 
-      finish(result.user, 'Welcome to Plié');
+      if (result.needsConfirmation) {
+        signupForm.classList.add('hidden');
+        const done = $('#signup-done');
+        if (done) {
+          done.classList.remove('hidden');
+          done.innerHTML =
+            '<div class="alert alert-success">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">' +
+            '<path d="M20 6L9 17l-5-5"/></svg><div><strong>Check your email.</strong><br>' +
+            'We have sent a confirmation link to ' + esc(result.email) +
+            '. Click it and you can sign in.</div></div>';
+        }
+        toast('Almost there', 'Confirm your email address to finish signing up.', 'info', 8000);
+        return;
+      }
+
+      goNext('Welcome to Plié', result.user);
+    });
+  }
+
+  /* =========================================================================
+     Boot — called by store.js before the page renders
+     ========================================================================= */
+  async function init() {
+    if (authReady) return cachedUser;
+    authReady = true;
+
+    await loadUser();
+
+    // Keep the nav honest if the session is refreshed or dropped in another tab
+    sb().auth.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_OUT') { cachedUser = null; announce(); return; }
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        await loadUser();
+        announce();
+      }
     });
 
-    /* --- demo account shortcut -------------------------------------------
-       EDIT: delete this block (and #demo-hint in login.html) before launch. */
-    const demoFill = $('#demo-fill');
-    if (demoFill) {
-      demoFill.addEventListener('click', () => {
-        selectTab('login');
-        loginEmail.value = DEMO.email;
-        loginPassword.value = DEMO.password;
-        Validate.clearAll(loginForm);
-        loginEmail.focus();
-        toast('Demo details filled in', 'Press “Log in” to continue.', 'info', 3500);
-      });
-    }
+    return cachedUser;
   }
 
-  /** Used only to undo a sign-up that a later client-side check rejected. */
-  function removeUser(id) {
-    saveUsers(allUsers().filter((u) => u.id !== id));
-  }
-
-  /* =========================================================================
-     Public API
-     ========================================================================= */
   window.Auth = {
-    signUp, logIn, logOut,
-    currentUser, isLoggedIn, updateUser,
-    addCredits, spendCredit, creditBalance,
-    requireAuth, redirectToLogin, setReturnTo, takeReturnTo, peekReturnTo,
-    initialsFor, renderNav,
-    DEMO: DEMO,
-    MIN_PASSWORD: MIN_PASSWORD,
-    WELCOME_CREDITS: WELCOME_CREDITS
+    init, signUp, logIn, logOut, updateUser,
+    currentUser, isLoggedIn, creditBalance, refreshCredits, loadUser,
+    requireAuth, setReturnTo, takeReturnTo, peekReturnTo,
+    initialsFor, renderNav, initLoginPage, bindLogout,
+    MIN_PASSWORD: MIN_PASSWORD
   };
-
-  /* =========================================================================
-     Boot
-     ========================================================================= */
-  document.addEventListener('DOMContentLoaded', function () {
-    seedDemoAccount();
-    renderNav();
-    bindLogout();
-    initLoginPage();
-  });
 })();

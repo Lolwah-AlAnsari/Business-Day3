@@ -6,6 +6,8 @@
   <title>Log In or Sign Up — Plié Pilates</title>
   <meta name="description" content="Log in to your Plié Pilates account to book classes and manage your bookings, or create a new account in a few seconds. New members get two free class credits.">
 
+  <link rel="preconnect" href="https://ygdrvbqddfcdgyrgzkay.supabase.co" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Fonts load without blocking the page: if the CDN is slow or unreachable,
@@ -159,30 +161,31 @@
               <button class="btn btn-block btn-lg mt-6" type="submit">Create my account</button>
             </form>
 
+            <!-- auth.js renders the "confirm your email" message here -->
+            <div class="hidden" id="signup-done"></div>
+
             <p class="auth-foot">
               Already a member?
               <a href="#" onclick="document.getElementById('tab-login').click();return false;">Log in instead</a>
             </p>
           </div>
 
-          <!-- ================= DEMO HINT =================
-               EDIT: delete this block, and the DEMO block in js/auth.js,
-               before this site goes anywhere near real users. -->
+          <!-- ================= DEMO ACCOUNT =================
+               EDIT: delete this block once you have real members. The account
+               itself lives in Supabase Auth — remove it there too. -->
           <div class="mt-7" id="demo-hint" style="padding-top:var(--sp-5);border-top:1px solid var(--sand-deep)">
-            <p class="hint text-center" style="margin-bottom:.75rem">
-              <strong>Just looking around?</strong> Use the demo account:
+            <p class="hint text-center">
+              <strong>Just looking around?</strong> Sign in with
               <code>demo@pliepilates.com</code> / <code>pilates123</code>
             </p>
-            <button class="btn btn-ghost btn-sm" type="button" id="demo-fill"
-                    style="display:block;margin-inline:auto">Fill in the demo login</button>
           </div>
 
         </div>
 
         <p class="hint text-center mt-6" style="max-width:52ch;margin-inline:auto">
-          This is a demonstration site. Accounts are stored in your own browser only &mdash;
-          nothing is sent anywhere, and no password here is protected. Please do not reuse
-          a real password.
+          Your account is stored securely with our booking provider and your password is
+          hashed &mdash; we never see it. This studio site is still a work in progress, so
+          please don&rsquo;t reuse a password from anywhere important just yet.
         </p>
       </div>
     </div>
@@ -233,15 +236,19 @@
 
       <div class="footer-bottom">
         <p>&copy; <span data-year>2026</span> Pli&eacute; Pilates. All rights reserved.</p>
-        <p>Demo site &mdash; accounts and bookings are stored in your browser only.</p>
+        <p>Bookings are live. Payments are not yet enabled.</p>
       </div>
     </div>
   </footer>
 
+  <!-- Supabase SDK, then the app. store.js must come last: it boots the
+       others once the studio content has loaded. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
+  <script src="js/config.js"></script>
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/booking.js"></script>
-
+  <script src="js/store.js"></script>
 </body>
 </html>

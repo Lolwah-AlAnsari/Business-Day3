@@ -6,6 +6,8 @@
   <title>My Account — Plié Pilates</title>
   <meta name="description" content="Your Plié Pilates dashboard: upcoming classes, booking history, remaining class credits and your profile details.">
 
+  <link rel="preconnect" href="https://ygdrvbqddfcdgyrgzkay.supabase.co" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Fonts load without blocking the page: if the CDN is slow or unreachable,
@@ -238,15 +240,19 @@
 
       <div class="footer-bottom">
         <p>&copy; <span data-year>2026</span> Pli&eacute; Pilates. All rights reserved.</p>
-        <p>Demo site &mdash; accounts and bookings are stored in your browser only.</p>
+        <p>Bookings are live. Payments are not yet enabled.</p>
       </div>
     </div>
   </footer>
 
+  <!-- Supabase SDK, then the app. store.js must come last: it boots the
+       others once the studio content has loaded. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
+  <script src="js/config.js"></script>
   <script src="js/data.js"></script>
   <script src="js/main.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/booking.js"></script>
-
+  <script src="js/store.js"></script>
 </body>
 </html>
