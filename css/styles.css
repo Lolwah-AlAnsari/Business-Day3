@@ -1890,3 +1890,184 @@ main { flex: 1; }
   body { background: #fff; color: #000; }
   .card, .slot, .price-card { box-shadow: none; border: 1px solid #ccc; }
 }
+
+/* ===========================================================================
+   18. 3D MODELS (classes page)
+   ---------------------------------------------------------------------------
+   Reformer and mat rigs built from real CSS 3D transforms — no WebGL, no
+   library, nothing to download. Each part is a cuboid positioned in 3D space
+   by js/models-3d.js; the stage rotation below is the "camera".
+
+   Every face is one <i>. Shading comes from an inset box-shadow rather than
+   filter(), because filter flattens preserve-3d in some browsers.
+   =========================================================================== */
+
+.p3d {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  perspective: 1300px;
+  perspective-origin: 50% 46%;
+  /* Soft pool of light behind the model so it doesn't float on nothing */
+  background:
+    radial-gradient(58% 48% at 50% 58%, var(--ph-a, var(--blush)) 0%, transparent 72%),
+    linear-gradient(150deg, var(--cream) 0%, var(--ph-b, var(--sand)) 100%);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.p3d-stage {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  /* the camera angle + a responsive scale */
+  transform: rotateX(-20deg) rotateY(-32deg) scale(var(--p3d-scale, 1));
+  animation: p3d-drift 14s var(--ease) infinite;
+}
+
+/* Gentle breathing rotation. Stays inside ±5° so no unmodelled face turns
+   toward the camera. */
+@keyframes p3d-drift {
+  0%, 100% { transform: rotateX(-20deg) rotateY(-32deg) scale(var(--p3d-scale, 1)); }
+  50%      { transform: rotateX(-17deg) rotateY(-27deg) scale(var(--p3d-scale, 1)); }
+}
+
+/* Nudge toward the viewer on hover */
+.p3d:hover .p3d-stage {
+  animation-play-state: paused;
+  transform: rotateX(-16deg) rotateY(-24deg) scale(calc(var(--p3d-scale, 1) * 1.04));
+  transition: transform var(--dur-slow) var(--ease);
+}
+
+/* --- the cuboid primitive ------------------------------------------------ */
+.p3d-cube {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  transform:
+    translate3d(var(--x, 0px), var(--y, 0px), var(--z, 0px))
+    rotateY(var(--ry, 0deg)) rotateX(var(--rx, 0deg)) rotateZ(var(--rz, 0deg));
+}
+
+.p3d-cube > i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  background: var(--c, var(--sand));
+  border-radius: var(--r, 0);
+}
+
+/* Face sizing — each face is centred on the cube's origin */
+.p3d-cube > .f-fr,
+.p3d-cube > .f-bk { width: var(--w); height: var(--h); margin-left: calc(var(--w) / -2); margin-top: calc(var(--h) / -2); }
+.p3d-cube > .f-lf,
+.p3d-cube > .f-rt { width: var(--d); height: var(--h); margin-left: calc(var(--d) / -2); margin-top: calc(var(--h) / -2); }
+.p3d-cube > .f-tp,
+.p3d-cube > .f-bm { width: var(--w); height: var(--d); margin-left: calc(var(--w) / -2); margin-top: calc(var(--d) / -2); }
+
+/* Face placement */
+.p3d-cube > .f-fr { transform: translateZ(calc(var(--d) /  2)); }
+.p3d-cube > .f-bk { transform: rotateY(180deg) translateZ(calc(var(--d) / 2)); }
+.p3d-cube > .f-rt { transform: rotateY(90deg)  translateZ(calc(var(--w) / 2)); }
+.p3d-cube > .f-lf { transform: rotateY(-90deg) translateZ(calc(var(--w) / 2)); }
+.p3d-cube > .f-tp { transform: rotateX(90deg)  translateZ(calc(var(--h) / 2)); }
+.p3d-cube > .f-bm { transform: rotateX(-90deg) translateZ(calc(var(--h) / 2)); }
+
+/* Directional shading — lit from upper left */
+.p3d-cube > .f-tp { box-shadow: inset 0 0 0 999px rgba(255, 255, 255, 0.20); }
+.p3d-cube > .f-fr { box-shadow: inset 0 0 0 999px rgba(69, 59, 56, 0.05); }
+.p3d-cube > .f-rt { box-shadow: inset 0 0 0 999px rgba(69, 59, 56, 0.20); }
+.p3d-cube > .f-bk { box-shadow: inset 0 0 0 999px rgba(69, 59, 56, 0.26); }
+.p3d-cube > .f-lf { box-shadow: inset 0 0 0 999px rgba(69, 59, 56, 0.12); }
+.p3d-cube > .f-bm { box-shadow: inset 0 0 0 999px rgba(69, 59, 56, 0.34); }
+
+/* --- round parts: rings (magic circle, loop band) and balls -------------- */
+.p3d-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--w);
+  height: var(--h);
+  margin-left: calc(var(--w) / -2);
+  margin-top: calc(var(--h) / -2);
+  border: var(--t, 8px) solid var(--c, var(--rose));
+  border-radius: 50%;
+  background: transparent;
+  transform-style: preserve-3d;
+  transform:
+    translate3d(var(--x, 0px), var(--y, 0px), var(--z, 0px))
+    rotateY(var(--ry, 0deg)) rotateX(var(--rx, 0deg)) rotateZ(var(--rz, 0deg));
+  box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.35),
+              0 2px 6px rgba(69, 59, 56, 0.12);
+}
+
+.p3d-ball {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--w);
+  height: var(--w);
+  margin-left: calc(var(--w) / -2);
+  margin-top: calc(var(--w) / -2);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%,
+      color-mix(in srgb, var(--c) 30%, #fff) 0%,
+      var(--c) 46%,
+      color-mix(in srgb, var(--c) 72%, #6F615C) 100%);
+  transform: translate3d(var(--x, 0px), var(--y, 0px), var(--z, 0px));
+  box-shadow: 0 6px 14px rgba(69, 59, 56, 0.18);
+}
+
+/* Contact shadow on the floor plane */
+.p3d-shadow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--w);
+  height: var(--d);
+  margin-left: calc(var(--w) / -2);
+  margin-top: calc(var(--d) / -2);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(69, 59, 56, 0.20) 0%, transparent 70%);
+  transform: translate3d(var(--x, 0px), var(--y, 0px), var(--z, 0px)) rotateX(90deg);
+}
+
+/* Caption chip in the corner of the scene */
+.p3d-tag {
+  position: absolute;
+  left: var(--sp-4);
+  bottom: var(--sp-4);
+  z-index: 2;
+  padding: 0.3rem 0.85rem;
+  background: color-mix(in srgb, var(--white) 82%, transparent);
+  backdrop-filter: blur(6px);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--taupe-muted);
+}
+
+/* --- responsive scale ---------------------------------------------------- */
+/* Below 900px the layout drops to one column, so the scene box gets much
+   wider and the model needs to scale UP, not down, to still fill it. */
+@media (max-width: 1180px) { .p3d { --p3d-scale: 0.90; } }
+@media (max-width: 1024px) { .p3d { --p3d-scale: 0.85; } }
+@media (max-width: 900px)  { .p3d { --p3d-scale: 1.40; } }
+@media (max-width: 720px)  { .p3d { --p3d-scale: 1.15; } }
+@media (max-width: 520px)  { .p3d { --p3d-scale: 0.85; } }
+@media (max-width: 400px)  { .p3d { --p3d-scale: 0.68; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .p3d-stage { animation: none; }
+  .p3d:hover .p3d-stage {
+    transform: rotateX(-20deg) rotateY(-32deg) scale(var(--p3d-scale, 1));
+  }
+}
