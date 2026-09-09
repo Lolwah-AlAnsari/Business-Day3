@@ -104,7 +104,25 @@
 
     if (error) return fail(fieldForAuthError(error), friendlyAuthError(error));
 
-    // With "Confirm email" switched on, Supabase returns a user but no session.
+    /* Email already registered.
+       Supabase deliberately does NOT return an error here — that would let
+       anyone probe which addresses have accounts. Instead it replies with an
+       "obfuscated user response with no verification email sent", which looks
+       exactly like a successful sign-up except that `identities` comes back
+       empty. Without this check the visitor is told to check an inbox that
+       will never receive anything, believing they made a second account. */
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      return {
+        ok: false,
+        field: 'email',
+        existing: true,
+        email: cleanEmail,
+        message: 'An account with this email already exists. Log in instead, or reset your password.'
+      };
+    }
+
+    // With "Confirm email" switched on, a genuinely new sign-up returns a
+    // user (with one identity) but no session until they click the link.
     if (!data.session) {
       return { ok: true, user: null, needsConfirmation: true, email: cleanEmail };
     }
@@ -376,6 +394,38 @@
       goNext('Welcome back', result.user);
     });
 
+    /* --- "you already have an account" panel --- */
+    const existingPanel = $('#signup-existing');
+
+    function hideExistingAccount() {
+      if (!existingPanel) return;
+      existingPanel.classList.add('hidden');
+      existingPanel.innerHTML = '';
+    }
+
+    function showExistingAccount(email) {
+      if (!existingPanel) return;
+      existingPanel.classList.remove('hidden');
+      existingPanel.innerHTML =
+        '<div class="alert alert-info">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+        'stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/>' +
+        '<path d="M12 11v5M12 8h.01"/></svg>' +
+        '<div><strong>You already have an account.</strong><br>' +
+        esc(email) + ' is already registered with us.</div></div>' +
+        '<button class="btn btn-block" type="button" data-switch-login>Log in instead</button>';
+
+      existingPanel.querySelector('[data-switch-login]').addEventListener('click', () => {
+        selectTab('login');
+        loginEmail.value = email;          // carry the address across
+        hideExistingAccount();
+        Validate.clearAll(signupForm);
+        loginPassword.focus();
+      });
+
+      existingPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
     /* --- sign up --- */
     const suName = $('#signup-name');
     const suEmail = $('#signup-email');
@@ -385,6 +435,7 @@
     const suBtn = signupForm.querySelector('button[type=submit]');
     suBtn.dataset.label = suBtn.textContent;
     Validate.liveClear(signupForm);
+    suEmail.addEventListener('input', hideExistingAccount);
 
     signupForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -418,9 +469,14 @@
       if (!result.ok) {
         const map = { name: suName, email: suEmail, password: suPassword };
         Validate.fail(map[result.field] || suEmail, result.message);
+
+        // Already has an account: don't just block them, hand them the way in
+        if (result.existing) showExistingAccount(result.email);
+
         Validate.focusFirstError(signupForm);
         return;
       }
+      hideExistingAccount();
 
       if (result.needsConfirmation) {
         signupForm.classList.add('hidden');
